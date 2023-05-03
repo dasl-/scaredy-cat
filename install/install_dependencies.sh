@@ -20,7 +20,6 @@ updateAndInstallPackages(){
 
     sudo apt update
 
-
     local apt_packages=(
         # Dependencies for https://github.com/ageitgey/face_recognition
         # See face_recognition raspberry pi installation steps, although we made a handful of modifications:
@@ -61,7 +60,6 @@ updateAndInstallPackages(){
 
     # face_recognition: https://github.com/ageitgey/face_recognition
     sudo python3 -m pip install --upgrade face_recognition
-
 }
 
 removeTemporarilyAddedLinesFromSwapFile(){
