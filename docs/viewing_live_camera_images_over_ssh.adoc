@@ -1,0 +1,17 @@
+# Viewing live camera images over SSH 
+:toc:
+:toclevels: 5
+
+## Background
+If you are using Raspbian Lite, which does not come with a GUI, you may struggle to determine what images the camera is capturing. Viewing a live feed of the camera is useful for debugging.
+
+## Setup
+Viewing the live feed of camera images over SSH requires installation of https://www.xquartz.org/[XQuartz] on macOS. 
+....
+brew install --cask xquartz
+....
+
+## Viewing live feed
+1. Open XQuartz
+1. In an XQuartz terminal: `ssh -v -XY <user>@<pi hostname or IP>`
+1. ...etc...
