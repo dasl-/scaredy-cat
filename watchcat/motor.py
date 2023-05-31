@@ -10,11 +10,16 @@ class WatchCatMotor:
     DIRECTION_RIGHT = True
 
     CENTER_POSITION = 0
-    LEFT_POSITION = -130    # maximum number of steps to go to the left
+    LEFT_POSITION = -180    # maximum number of steps to go to the left
     RIGHT_POSITION = 130    # maximum number of steps to go to the right
 
-    STEP_SLEEP_TIME = 0.003 # .003 is standard spped, .0015 seems like the fastest reliable speed
-    EYE_DWELL_TIME = .3     # how long to sit at the extremes
+    # time (s) between steps, lower = faster movement. .003 is standard speed
+    STEP_LEFT_SLEEP_TIME = 0.001  
+    STEP_RIGHT_SLEEP_TIME = 0.002
+
+    # how long (s) to sit at the extremes
+    EYE_LEFT_DWELL_TIME = .6
+    EYE_RIGHT_DWELL_TIME = .5
 
     STEP_SEQUENCE = [[1,0,0,1],
                     [1,0,0,0],
@@ -36,7 +41,7 @@ class WatchCatMotor:
     def calibratePosition(self):
         for i in range(WatchCatMotor.RIGHT_POSITION * 4):
             self.step()
-        
+
         self.__position = WatchCatMotor.RIGHT_POSITION
 
     def setupGPIO(self):
@@ -62,35 +67,36 @@ class WatchCatMotor:
 
     def run(self):
         self.calibratePosition();
-        
+
         while (True):
             if (self.__position == WatchCatMotor.LEFT_POSITION):
                 # start moving right
                 self.__direction = WatchCatMotor.DIRECTION_RIGHT
-                time.sleep(WatchCatMotor.EYE_DWELL_TIME)
+                time.sleep(WatchCatMotor.EYE_LEFT_DWELL_TIME)
 
             elif (self.__position == WatchCatMotor.RIGHT_POSITION):
                 # start moving left
                 self.__direction = WatchCatMotor.DIRECTION_LEFT
-                time.sleep(WatchCatMotor.EYE_DWELL_TIME)
+                time.sleep(WatchCatMotor.EYE_RIGHT_DWELL_TIME)
 
             self.step()
-    
+
     def step(self):
         for pin in range(0, len(self.__motor_pins)):
             GPIO.output( self.__motor_pins[pin], WatchCatMotor.STEP_SEQUENCE[self.__motor_step_counter][pin] )
-        
+
         if self.__direction == WatchCatMotor.DIRECTION_LEFT:
             self.__position = self.__position - 1
             self.__motor_step_counter = (self.__motor_step_counter - 1) % 8
+            time.sleep( WatchCatMotor.STEP_LEFT_SLEEP_TIME )
         elif self.__direction == WatchCatMotor.DIRECTION_RIGHT:
             self.__position = self.__position + 1
             self.__motor_step_counter = (self.__motor_step_counter + 1) % 8
+            time.sleep( WatchCatMotor.STEP_RIGHT_SLEEP_TIME )
         else:
             self.cleanup()
             exit( 1 )
 
-        time.sleep( WatchCatMotor.STEP_SLEEP_TIME )
 
     def step_left(self):
         self.__direction = WatchCatMotor.DIRECTION_LEFT
@@ -108,7 +114,7 @@ class WatchCatMotor:
 def main():
     motor = WatchCatMotor()
 
-    try:  
+    try:
         motor.run()
     except KeyboardInterrupt:
         motor.cleanup()
