@@ -4,6 +4,11 @@ import argparse
 import os
 import sys
 
+# This is necessary for the imports below to work.
+root_dir = os.path.abspath(os.path.dirname(__file__) + '/..')
+sys.path.append(root_dir)
+from watchcat.watchcat import Motor
+
 def parseArgs():
     parser = argparse.ArgumentParser(description='WatchCat',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -32,11 +37,12 @@ if args.width > 0:
 if args.height > 0:
     height = args.height
 
-# This is necessary for the imports below to work.
-# Importing WatchCat is slow, so only do it if necessary, i.e. avoid
-# importing it if we just want to show the command help text.
-root_dir = os.path.abspath(os.path.dirname(__file__) + '/..')
-sys.path.append(root_dir)
-from watchcat.watchcat import WatchCat
-
-WatchCat(width, height, args.show_preview).run()
+motor = Motor()
+try:
+    motor.run()
+except KeyboardInterrupt:
+    motor.cleanup()
+    exit(1)
+    
+motor.cleanup()
+exit(0)

@@ -14,4 +14,4 @@ brew install --cask xquartz
 ## Viewing live feed
 1. Open XQuartz
 1. In an XQuartz terminal: `ssh -v -XY <user>@<pi hostname or IP>`
-1. ...etc...
+1. ...etc... e.g. `./bin/watchcat --show-preview`
