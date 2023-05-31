@@ -9,12 +9,12 @@ class WatchCatMotor:
     DIRECTION_LEFT = False
     DIRECTION_RIGHT = True
 
-    LEFT_POSITION = -110
     CENTER_POSITION = 0
-    RIGHT_POSITION = 110
-    FULL_SWEEP = 220
+    LEFT_POSITION = -130    # maximum number of steps to go to the left
+    RIGHT_POSITION = 130    # maximum number of steps to go to the right
 
-    SLEEP_TIME = 0.003 # .0015 seems like the fastest reliable speed
+    STEP_SLEEP_TIME = 0.003 # .003 is standard spped, .0015 seems like the fastest reliable speed
+    EYE_DWELL_TIME = .3     # how long to sit at the extremes
 
     STEP_SEQUENCE = [[1,0,0,1],
                     [1,0,0,0],
@@ -33,8 +33,11 @@ class WatchCatMotor:
 
         self.setupGPIO()
 
-    def resetPosition(self):
-        self.__position = WatchCatMotor.CENTER_POSITION
+    def calibratePosition(self):
+        for i in range(WatchCatMotor.RIGHT_POSITION * 4):
+            self.step()
+        
+        self.__position = WatchCatMotor.RIGHT_POSITION
 
     def setupGPIO(self):
         GPIO.setmode( GPIO.BCM )
@@ -58,14 +61,18 @@ class WatchCatMotor:
         GPIO.cleanup()
 
     def run(self):
+        self.calibratePosition();
+        
         while (True):
             if (self.__position == WatchCatMotor.LEFT_POSITION):
                 # start moving right
                 self.__direction = WatchCatMotor.DIRECTION_RIGHT
+                time.sleep(WatchCatMotor.EYE_DWELL_TIME)
 
             elif (self.__position == WatchCatMotor.RIGHT_POSITION):
                 # start moving left
                 self.__direction = WatchCatMotor.DIRECTION_LEFT
+                time.sleep(WatchCatMotor.EYE_DWELL_TIME)
 
             self.step()
     
@@ -83,7 +90,7 @@ class WatchCatMotor:
             self.cleanup()
             exit( 1 )
 
-        time.sleep( WatchCatMotor.SLEEP_TIME )
+        time.sleep( WatchCatMotor.STEP_SLEEP_TIME )
 
     def step_left(self):
         self.__direction = WatchCatMotor.DIRECTION_LEFT
@@ -99,26 +106,10 @@ class WatchCatMotor:
 
 
 def main():
-    print ("Please Center the Eye - 1:move left, 2:move right, 3:start loop")
     motor = WatchCatMotor()
 
-    centering = True
-
-    try:
-        while (centering):
-            x = input('')
-
-            if x == '1':
-                motor.step_left()
-            elif x == '2':
-                motor.step_right()
-            elif x == '3':
-                print  ("running...")
-                motor.resetPosition()
-                centering = False
-                
+    try:  
         motor.run()
-
     except KeyboardInterrupt:
         motor.cleanup()
         exit( 1 )
