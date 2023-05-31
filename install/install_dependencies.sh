@@ -3,117 +3,130 @@
 set -euo pipefail -o errtrace
 
 BASE_DIR="$(dirname "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )")"
-RESTART_REQUIRED_FILE='/tmp/pifi_install_restart_required'
+
+SWAP_FILE='/etc/dphys-swapfile'
+TEMPORARILY_COMMENTED_OUT_STR='temporarily_commented_out_by_watchcat'
+TEMPORARILY_ADDED_STR='temporarily_added_by_watchcat'
 
 main(){
     trap 'fail $? $LINENO' ERR
 
     updateAndInstallPackages
-    installLedDriver
-    clearYoutubeDlCache
-    installNode
-
-    if [ -f $RESTART_REQUIRED_FILE ]; then
-        echo "Restarting..."
-        sudo shutdown -r now
-    fi
+    installDlib
 }
 
 updateAndInstallPackages(){
     info "Updating and installing packages..."
 
-    # Allow the command `sudo apt build-dep python3-pygame` to run.
-    # https://stackoverflow.com/questions/47773715/error-you-must-put-some-source-uris-in-your-sources-list
-    sudo sed -i 's/#\s*deb-src/deb-src/' /etc/apt/sources.list
-
     sudo apt update
 
-    # python3-pip: needed to ensure we have the pip module. Else we'd get errors like this:
-    #   https://askubuntu.com/questions/1388144/usr-bin-python3-no-module-named-pip
-    # libsdl2-mixer: needed for pygame
-    #   (maybe it's no longer necessary to explicitly install it since we have `sudo apt -y build-dep python3-pygame` below?`)
-    # libsdl2-dev: needed for pygame
-    #   (maybe it's no longer necessary to explicitly install it since we have `sudo apt -y build-dep python3-pygame` below?`)
-    # parallel: needed for update_youtube-dl.sh script
-    # libatlas-base-dev: needed for numpy
-    sudo apt -y install git python3-pip ffmpeg sqlite3 mbuffer libsdl2-mixer-2.0-0 libsdl2-dev parallel \
+    local apt_packages=(
+        # Dependencies for https://github.com/ageitgey/face_recognition
+        # See face_recognition raspberry pi installation steps, although we made a handful of modifications:
+        # https://gist.github.com/ageitgey/1ac8dbe8572f3f533df6269dab35df65
+        build-essential
+        cmake
+        gfortran
+        git
+        wget
+        curl
+        graphicsmagick
+        libgraphicsmagick1-dev
+        # Note, the referenced instructions originally said to install libatlas-dev, which I changed to libatlas-base-dev.
+        # Package appears to have been renamed.
         libatlas-base-dev
-    sudo apt -y build-dep python3-pygame # other dependencies needed for pygame
+        libavcodec-dev
+        libavformat-dev
+        libboost-all-dev
+        libgtk2.0-dev
+        libjpeg-dev
+        liblapack-dev
+        libswscale-dev
+        pkg-config
+        python3-dev
+        python3-numpy
+        python3-pip
+        zip
+
+        # raspberry pi camera library: https://github.com/raspberrypi/picamera2#installation
+        python3-picamera2
+        # enable viewing camera preview images over ssh
+        # See: https://github.com/dasl-/watchcat/blob/main/docs/viewing_live_camera_images_over_ssh.adoc
+        python3-pyqt5
+        python3-opengl
+    )
+    sudo apt -y install "${apt_packages[*]}"
     sudo apt -y full-upgrade
 
-    sudo python3 -m pip install --upgrade youtube_dl yt-dlp numpy pytz websockets simpleaudio pygame pyjson5
+    # face_recognition: https://github.com/ageitgey/face_recognition
+    sudo python3 -m pip install --upgrade face_recognition
 }
 
-installLedDriver(){
-    info "Installing LED driver..."
-    local led_driver
-    led_driver=$("$BASE_DIR"/utils/get_config_value --keys leds.driver)
-    case $led_driver in
-        apa102)     installLedDriverApa102 ;;
-        rgbmatrix)  installLedDriverRgbMatrix ;;
-        ws2812b)    echo 'ws2812b no-op ... TODO' ;;
-        *)          die "Unsupported LED driver: $led_driver" ;;
-    esac
+removeTemporarilyAddedLinesFromSwapFile(){
+    local backup_version
+    backup_version=$1
+    # Remove temporarily added lines and create a backup of the original swap file
+    sed -i.watchcat_bak"$backup_version" "/$TEMPORARILY_ADDED_STR/d" $SWAP_FILE
 }
 
-installLedDriverApa102(){
-    info "Installing LED driver apa102..."
-    sudo python3 -m pip install --upgrade apa102-pi
+
+# See face_recognition raspberry pi installation steps, although we made a handful of modifications:
+# https://github.com/ageitgey/face_recognition
+# https://gist.github.com/ageitgey/1ac8dbe8572f3f533df6269dab35df65
+temporarilySetSwapTo(){
+    local new_swap_size
+    new_swap_size=$1
+
+    info "Temporarily setting swap size to: $new_swap_size ..."
+
+    removeTemporarilyAddedLinesFromSwapFile 1
+
+    # comment out existing CONF_SWAPSIZE lines
+    sudo sed $SWAP_FILE -i -e "s/^\(CONF_SWAPSIZE=.*\)/#\1 $TEMPORARILY_COMMENTED_OUT_STR/"
+
+    # set temporary new swap size
+    echo "CONF_SWAPSIZE=$new_swap_size # $TEMPORARILY_ADDED_STR" | sudo tee -a $SWAP_FILE >/dev/null
+
+    sudo /etc/init.d/dphys-swapfile restart
 }
 
-# e.g. https://www.adafruit.com/product/2276
-installLedDriverRgbMatrix(){
-    info "Installing LED driver RGB Matrix..."
+restoreOldSwapSettings(){
+    info "Restoring old swap settings ..."
+    removeTemporarilyAddedLinesFromSwapFile 2
+
+    # uncomment temporarily commented out lines
+    sudo sed $SWAP_FILE -i -e "s/^\#(CONF_SWAPSIZE=.*) $TEMPORARILY_COMMENTED_OUT_STR/\1/"
+
+    sudo /etc/init.d/dphys-swapfile restart
+}
+
+installDlib(){
+    info "Installing dlib ..."
+
+    # Temporarily enable a larger swap file size (so the dlib compile won't fail due to limited memory):
+    # See: https://gist.github.com/ageitgey/1ac8dbe8572f3f533df6269dab35df65
+    temporarilySetSwapTo 1024
 
     local clone_dir
-    clone_dir="$BASE_DIR/../rpi-rgb-led-matrix"
+    clone_dir="$BASE_DIR/../dlib"
     if [ -d "$clone_dir" ]; then
         info "Pulling repo in $clone_dir ..."
         pushd "$clone_dir"
         git pull
     else
         info "Cloning repo into $clone_dir ..."
-        git clone https://github.com/hzeller/rpi-rgb-led-matrix "$clone_dir"
+        # the instructions said to clone a different branch ( git clone -b 'v19.6' --single-branch https://github.com/davisking/dlib.git dlib/ ).
+        # I had to clone a more recent version to solve "AttributeError: 'Thread' object has no attribute 'isAlive'" encoubntered during the
+        # subsequent installation step (see: https://github.com/jupyter-vim/jupyter-vim/issues/51 )
+        git clone -b 'v19.24' --single-branch https://github.com/davisking/dlib.git "$clone_dir"
         pushd "$clone_dir"
     fi
 
-    make build-python PYTHON="$(command -v python3)"
-    sudo make install-python PYTHON="$(command -v python3)"
+    info "Compiling dlib. This may take ~40 minutes on a raspberry pi 4 ..."
+    sudo python3 setup.py install --compiler-flags "-mfpu=neon"
+
     popd
-
-    sudo python3 -m pip install --upgrade Pillow
-}
-
-clearYoutubeDlCache(){
-    info "Clearing youtube-dl caches..."
-
-    # https://askubuntu.com/a/329689
-    local users
-    users=$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd)
-
-    # Just in case the youtube-dl cache got polluted, as it has before...
-    # https://github.com/ytdl-org/youtube-dl/issues/24780
-    # shellcheck disable=SC1083
-    parallel --will-cite --max-procs 0 --halt never sudo -u {1} {2} --rm-cache-dir ::: root "$users" ::: youtube-dl yt-dlp
-}
-
-installNode(){
-    info "\\nInstalling node and npm..."
-
-    # Install node and npm. Installing this with the OS's default packages provided by apt installs a pretty old
-    # version of node and npm. We need a newer version.
-    # See: https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
-    sudo apt-get install -y nodejs
-
-    info "\\nInstalling react app dependencies..."
-    # TODO: when installing from scratch on a fresh OS installation, this step once failed with
-    # and error: https://gist.github.com/dasl-/01b9bf9650730c7dbfab6c859ea6c0dc
-    # See if this is reproducible on a fresh install sometime...
-    # It's weird because apparently it's a node error, but the line that is executing below is a
-    # npm command. Could npm be shelling out to node? Maybe I can figure this out by running
-    # checking the process list while the next step is running, and htop to look at RAM usage.`
-    npm install --prefix "$BASE_DIR/app"
+    restoreOldSwapSettings
 }
 
 fail(){
