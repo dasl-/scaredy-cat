@@ -31,20 +31,21 @@ class WatchCatMotor:
                     [0,0,0,1]]
 
     def __init__(self, in1 = 17, in2 = 18, in3 = 22, in4 = 23):
+        self.__paused = False
         self.__position = WatchCatMotor.CENTER_POSITION
         self.__direction = WatchCatMotor.DIRECTION_RIGHT
         self.__motor_pins = [in1, in2, in3, in4]
         self.__motor_step_counter = 0
 
-        self.setupGPIO()
+        self.__setupGPIO()
 
-    def calibratePosition(self):
+    def calibrate_position(self):
         for i in range(WatchCatMotor.RIGHT_POSITION * 4):
-            self.step()
+            self.__step()
 
         self.__position = WatchCatMotor.RIGHT_POSITION
 
-    def setupGPIO(self):
+    def __setupGPIO(self):
         GPIO.setmode( GPIO.BCM )
 
         GPIO.setup( self.__motor_pins[0], GPIO.OUT )
@@ -64,9 +65,15 @@ class WatchCatMotor:
         GPIO.output( self.__motor_pins[3], GPIO.LOW )
 
         GPIO.cleanup()
+    
+    def pause(self):
+        self.__paused = True
+    
+    def unpause(self):
+        self.__paused = False
 
     def run(self):
-        self.calibratePosition();
+        self.calibrate_position();
 
         while (True):
             if (self.__position == WatchCatMotor.LEFT_POSITION):
@@ -79,9 +86,10 @@ class WatchCatMotor:
                 self.__direction = WatchCatMotor.DIRECTION_LEFT
                 time.sleep(WatchCatMotor.EYE_RIGHT_DWELL_TIME)
 
-            self.step()
+            if (not self.__paused):
+                self.__step()
 
-    def step(self):
+    def __step(self):
         for pin in range(0, len(self.__motor_pins)):
             GPIO.output( self.__motor_pins[pin], WatchCatMotor.STEP_SEQUENCE[self.__motor_step_counter][pin] )
 
@@ -93,22 +101,6 @@ class WatchCatMotor:
             self.__position = self.__position + 1
             self.__motor_step_counter = (self.__motor_step_counter + 1) % 8
             time.sleep( WatchCatMotor.STEP_RIGHT_SLEEP_TIME )
-        else:
-            self.cleanup()
-            exit( 1 )
-
-
-    def step_left(self):
-        self.__direction = WatchCatMotor.DIRECTION_LEFT
-        i = 0
-        for i in range(10):
-            self.step()
-
-    def step_right(self):
-        self.__direction = WatchCatMotor.DIRECTION_RIGHT
-        i = 0
-        for i in range(10):
-            self.step()
 
 
 def main():
