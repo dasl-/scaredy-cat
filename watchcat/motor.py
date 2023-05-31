@@ -14,12 +14,12 @@ class WatchCatMotor:
     RIGHT_POSITION = 130    # maximum number of steps to go to the right
 
     # time (s) between steps, lower = faster movement. .003 is standard speed
-    STEP_LEFT_SLEEP_TIME = 0.001  
-    STEP_RIGHT_SLEEP_TIME = 0.002
+    STEP_LEFT_SLEEP_TIME = 0.002  
+    STEP_RIGHT_SLEEP_TIME = 0.003
 
     # how long (s) to sit at the extremes
-    EYE_LEFT_DWELL_TIME = .6
-    EYE_RIGHT_DWELL_TIME = .5
+    EYE_LEFT_DWELL_TIME = .1
+    EYE_RIGHT_DWELL_TIME = .2
 
     STEP_SEQUENCE = [[1,0,0,1],
                     [1,0,0,0],
@@ -73,7 +73,7 @@ class WatchCatMotor:
         self.__paused = False
 
     def run(self):
-        self.calibrate_position();
+        self.calibrate_position()
 
         while (True):
             if (self.__position == WatchCatMotor.LEFT_POSITION):
@@ -101,7 +101,6 @@ class WatchCatMotor:
             self.__position = self.__position + 1
             self.__motor_step_counter = (self.__motor_step_counter + 1) % 8
             time.sleep( WatchCatMotor.STEP_RIGHT_SLEEP_TIME )
-
 
 def main():
     motor = WatchCatMotor()
