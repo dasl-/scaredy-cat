@@ -50,7 +50,10 @@ class WatchCat:
 
             self.__picam2.post_callback = draw_faces
 
-        # raw: ensure we get the full field of view even when using a small viewport
+        # raw: ensure we get the full field of view even when using a small viewport. See:
+        # * https://github.com/raspberrypi/picamera2/discussions/567
+        # * For pi camera v1 and v2 modules, but a similar concept applies for v3 (we use v3):
+        #   https://picamera.readthedocs.io/en/release-1.13/fov.html#sensor-modes
         config = self.__picam2.create_still_configuration(main=main, display=display, raw={'size': self.__picam2.sensor_resolution})
         self.__logger.info(f"Using picam config: {config}")
 
