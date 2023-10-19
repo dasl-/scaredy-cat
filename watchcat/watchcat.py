@@ -1,4 +1,3 @@
-import face_recognition
 import picamera2
 import time
 import cv2
@@ -78,8 +77,6 @@ class WatchCat:
 
             face_detect_start = time.time()
             # Find all the faces and face encodings in the current frame of video
-            # self.__face_locations = face_recognition.face_locations(output)
-            # Using opencv seemed faster than face_recognition library? But maybe compare their accuracy TODO...
             grey = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)
 
             # detectMultiScale docs:
