@@ -31,6 +31,8 @@ updateAndInstallPackages(){
     # shellcheck disable=SC2048,SC2086
     sudo apt -y install ${apt_packages[*]}
     sudo apt -y full-upgrade
+
+    sudo PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pytz
 }
 
 fail(){

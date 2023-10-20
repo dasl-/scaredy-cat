@@ -19,7 +19,7 @@ sudo systemctl restart 'watchcat_*'
 
 Logs can be viewed via:
 ....
-cat /var/log/daemon.log | grep WATCHCAT
+journalctl | grep WATCHCAT
 ....
 
 ## Materials
