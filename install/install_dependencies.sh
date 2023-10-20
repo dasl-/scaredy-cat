@@ -8,6 +8,7 @@ main(){
     trap 'fail $? $LINENO' ERR
 
     updateAndInstallPackages
+    info "Done installing dependencies."
 }
 
 updateAndInstallPackages(){

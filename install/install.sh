@@ -17,23 +17,7 @@ main(){
     parseOpts "$@"
     setupSystemdServices
 
-    # Setting the hostname should be as close to the last step as possible. Anything after this step that
-    # requires `sudo` will emit a warning: "sudo: unable to resolve host raspberrypi: Name or service not known".
-    # Note that `sudo` will still work; it's just a "warning".
-    setHostname
-
-    new_config=$(cat $CONFIG)
-    config_diff=$(diff <(echo "$old_config") <(echo "$new_config") || true)
-    if [[ -f $RESTART_REQUIRED_FILE || -n "$config_diff" ]] ; then
-        info "Restart is required!"
-        info "Config diff:\n$config_diff"
-        info "Restarting..."
-
-        # Hide the "sudo: unable to resolve host raspberrypi: Name or service not known" output by
-        # redirecting stderr. This it to avoid someone thinking something didn't work  (it's fine).
-        # Related to changing the hostname via setHostname above.
-        sudo shutdown -r now 2>/dev/null
-    fi
+    info "Done installing."
 }
 
 parseOpts(){
@@ -53,20 +37,7 @@ parseOpts(){
 }
 
 setupSystemdServices(){
-    info "Setting up systemd services"
-
-    sudo "$BASE_DIR/install/pifi_queue_service.sh"
-    sudo "$BASE_DIR/install/pifi_server_service.sh"
-    sudo "$BASE_DIR/install/pifi_websocket_server_service.sh"
-    sudo chown root:root /etc/systemd/system/pifi_*.service
-    sudo chmod 644 /etc/systemd/system/pifi_*.service
-    sudo systemctl enable /etc/systemd/system/pifi_*.service
-    sudo systemctl daemon-reload
-    sudo systemctl restart $(ls /etc/systemd/system/pifi_*.service | cut -d'/' -f5)
-}
-
-setupSystemd(){
-    info "\\nSetting up systemd..."
+    info "Setting up systemd services..."
 
 cat <<-EOF | sudo tee /etc/systemd/system/watchcat_motor.service >/dev/null
 [Unit]
