@@ -26,7 +26,9 @@ updateAndInstallPackages(){
 
         python3-opencv
     )
-    sudo apt -y install "${apt_packages[*]}"
+
+    # shellcheck disable=SC2048,SC2086
+    sudo apt -y install ${apt_packages[*]}
     sudo apt -y full-upgrade
 }
 
