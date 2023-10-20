@@ -24,15 +24,13 @@ updateAndInstallPackages(){
         # See: https://github.com/dasl-/watchcat/blob/main/docs/viewing_live_camera_images_over_ssh.adoc
         python3-pyqt5
         python3-opengl
-
-        python3-opencv
     )
 
     # shellcheck disable=SC2048,SC2086
     sudo apt -y install ${apt_packages[*]}
     sudo apt -y full-upgrade
 
-    sudo PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pytz
+    sudo PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pytz opencv-python
 }
 
 fail(){
