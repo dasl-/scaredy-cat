@@ -23,6 +23,8 @@ updateAndInstallPackages(){
         # See: https://github.com/dasl-/watchcat/blob/main/docs/viewing_live_camera_images_over_ssh.adoc
         python3-pyqt5
         python3-opengl
+
+        python3-opencv
     )
     sudo apt -y install "${apt_packages[*]}"
     sudo apt -y full-upgrade

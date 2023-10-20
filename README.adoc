@@ -1,0 +1,30 @@
+# watchcat
+:toc:
+:toclevels: 5
+
+## Background
+A cat clock with a camera inside. The cat's tail and eyes move as a pendulum with every "tick". When the camera detects a face, the tail and eyes stop moving until the face is no longer in the camera view.
+
+https://photos.app.goo.gl/FYvWjFjmNzPmTfJi7[Photos & Videos]
+
+## Installation
+. `./install/install_dependencies.sh`
+. `./install/install.sh`
+
+## Administration
+There are 2 services: watchcat_motor.service and watchcat_main.service. Services can be restarted via:
+....
+sudo systemctl restart 'watchcat_*'
+....
+
+Logs can be viewed via:
+....
+cat /var/log/daemon.log | grep WATCHCAT
+....
+
+## Materials
+. https://www.amazon.com/gp/product/B0019IBD3U/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1[Kit Cat Klock Gentlemen The Original (Classic Black)] (These come in two sizes - small and large. Make sure you get the large [original] one)
+. 3D printed models: https://github.com/dasl-/watchcat/tree/main/models
+. Raspberry pi 4b
+. https://www.pishop.us/product/raspberry-pi-camera-module-3/[Raspberry Pi Camera Module 3]
+. Stepper motor and associated control circuitry

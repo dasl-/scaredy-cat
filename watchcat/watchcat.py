@@ -58,7 +58,7 @@ class WatchCat:
 
         self.__picam2.configure(config)
         self.__picam2.start()
-        self.__picam2.set_controls({"AfMode": libcamera.controls.AfModeEnum.Continuous}) # TODO: is this working?
+        self.__picam2.set_controls({"AfMode": libcamera.controls.AfModeEnum.Continuous, "AfRange": libcamera.controls.AfRangeEnum.Full, "AfSpeed":libcamera.controls.AfSpeedEnum.Fast}) # TODO: is this working?
 
         self.__logger.info("Finished starting WatchCat.")
         self.__face_locations = []
@@ -74,6 +74,8 @@ class WatchCat:
             # Grab a single frame of video from the RPi camera as a numpy array
             output = self.__picam2.capture_array()
             self.__logger.info(f"Done capturing image. Output shape: {output.shape}")
+            metadata = self.__picam2.capture_metadata()
+            self.__logger.info(f"metadata: {metadata}")
 
             face_detect_start = time.time()
             # Find all the faces and face encodings in the current frame of video

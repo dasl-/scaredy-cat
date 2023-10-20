@@ -3,5 +3,5 @@
 *~
 .project
 .DS_Store
-sftp-config.json
+sftp-config.json*
 __pycache__/
