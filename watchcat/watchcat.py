@@ -74,9 +74,8 @@ class WatchCat:
             self.__logger.info("Capturing image...")
             # Grab a single frame of video from the RPi camera as a numpy array
             output = self.__picam2.capture_array()
-            self.__logger.info(f"Done capturing image. Output shape: {output.shape}")
             metadata = self.__picam2.capture_metadata()
-            self.__logger.info(f"metadata: {metadata}")
+            self.__logger.info(f"Done capturing image. Output shape: {output.shape}. Lens position: {metadata['LensPosition']}")
 
             face_detect_start = time.time()
             # Find all the faces and face encodings in the current frame of video
