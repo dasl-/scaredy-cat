@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import RPi.GPIO as GPIO
+import atexit
 import time
 import traceback
 
@@ -46,6 +47,7 @@ class Motor:
         self.__motor_pins = [in1, in2, in3, in4]
         self.__motor_step_counter = 0
 
+        atexit.register(self.__cleanupGPIO)
         self.__setupGPIO()
 
     def calibrate_position(self):
@@ -67,7 +69,7 @@ class Motor:
         GPIO.output(self.__motor_pins[2], GPIO.LOW)
         GPIO.output(self.__motor_pins[3], GPIO.LOW)
 
-    def cleanup(self):
+    def __cleanupGPIO(self):
         GPIO.output(self.__motor_pins[0], GPIO.LOW)
         GPIO.output(self.__motor_pins[1], GPIO.LOW)
         GPIO.output(self.__motor_pins[2], GPIO.LOW)

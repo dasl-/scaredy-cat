@@ -37,12 +37,4 @@ if args.width > 0:
 if args.height > 0:
     height = args.height
 
-motor = Motor()
-try:
-    motor.run()
-except KeyboardInterrupt:
-    motor.cleanup()
-    exit(1)
-    
-motor.cleanup()
-exit(0)
+Motor().run()
