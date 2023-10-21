@@ -2,6 +2,7 @@ import picamera2
 import time
 import cv2
 import libcamera
+import os
 import traceback
 
 from watchcat.logger import Logger
@@ -67,7 +68,7 @@ class WatchCat:
         self.__unix_socket_helper.connect(Motor.UNIX_SOCKET_PATH)
 
     def run(self):
-        face_detector = cv2.CascadeClassifier(f"{cv2.__path__[0]}/data/haarcascade_frontalface_default.xml")
+        face_detector = cv2.CascadeClassifier(f"{os.path.dirname(os.path.dirname(__file__))}/data/haarcascade_frontalface_default.xml")
         while True:
             loop_start = time.time()
             self.__logger.info("Capturing image...")
