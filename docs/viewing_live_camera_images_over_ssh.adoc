@@ -15,3 +15,7 @@ brew install --cask xquartz
 1. Open XQuartz
 1. In an XQuartz terminal: `ssh -v -XY <user>@<pi hostname or IP>`
 1. ...etc... e.g. `./bin/watchcat --show-preview`
+
+## Known issues
+
+This method of viewing live camera images doesn't seem to work with `sudo`. It fails when running in XQuartz with https://gist.github.com/dasl-/35a7a9df94a35188e2307b6e6e2fa092[this error]. So don't run with `sudo`!
