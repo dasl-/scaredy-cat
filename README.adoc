@@ -22,7 +22,7 @@ Logs can be viewed via:
 journalctl | grep WATCHCAT
 ....
 
-./docs/viewing_live_camera_images_over_ssh.adoc[Preview the camera footage].
+link:docs/viewing_live_camera_images_over_ssh.adoc[Preview the camera footage].
 
 ## Materials
 . https://www.amazon.com/gp/product/B0019IBD3U/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1[Kit Cat Klock Gentlemen The Original (Classic Black)] (These come in two sizes - small and large. Make sure you get the large [original] one)
