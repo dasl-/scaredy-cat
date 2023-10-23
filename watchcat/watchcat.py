@@ -72,8 +72,12 @@ class WatchCat:
         while True:
             loop_start = time.time()
             self.__logger.info("Capturing image...")
+
+            img_capture_start = time.time()
             # Grab a single frame of video from the RPi camera as a numpy array
             output = self.__picam2.capture_array()
+            img_capture_end = time.time()
+
             metadata = self.__picam2.capture_metadata()
             self.__logger.info(f"Done capturing image. Output shape: {output.shape}. Lens position: {metadata['LensPosition']}")
 
@@ -91,5 +95,5 @@ class WatchCat:
                 self.__unix_socket_helper.send_msg(Motor.PAUSE_SIGNAL) # TODO: this seems backwards?
             else:
                 self.__unix_socket_helper.send_msg(Motor.RUN_SIGNAL)
-            self.__logger.info(f"Found {len(self.__face_locations)} faces in image. Face locations: {self.__face_locations}. Loop took " +
-                f"{now - loop_start} s. Face detect took {now - face_detect_start} s.")
+            self.__logger.info(f"Found {len(self.__face_locations)} faces in image. Loop took " +
+                f"{round(now - loop_start, 3)} s. Image capture took {round(img_capture_end - img_capture_start, 3)} s. Face detect took {round(now - face_detect_start, 3)} s.")
