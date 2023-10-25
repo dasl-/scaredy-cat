@@ -9,6 +9,11 @@ from watchcat.logger import Logger
 from watchcat.unixsockethelper import UnixSocketHelper
 from watchcat.motor import Motor
 
+# See specs for raspberry pi camera module 3:
+# https://www.raspberrypi.com/documentation/accessories/camera.html#hardware-specification
+#
+# See picamera2 library docs:
+# https://datasheets.raspberrypi.com/camera/picamera2-manual.pdf
 class WatchCat:
 
     __instance = None
