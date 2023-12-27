@@ -16,6 +16,7 @@ class TickController:
 
     PAUSE_SIGNAL = 'pause'
     RUN_SIGNAL = 'run'
+    UNIX_SOCKET_PATH = '/tmp/motor_unix_socket'
 
     def __init__(self):
         self.__logger = Logger().set_namespace(self.__class__.__name__)
