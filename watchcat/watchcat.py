@@ -99,7 +99,9 @@ class WatchCat:
             now = time.time()
             if len(self.__face_locations) > 0 and not is_paused:
                 self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL) # TODO: this seems backwards?
+                is_paused = True
             elif is_paused:
                 self.__unix_socket_helper.send_msg(TickController.UNPAUSE_SIGNAL)
+                is_paused = False
             self.__logger.info(f"Found {len(self.__face_locations)} faces in image. Loop took " +
                 f"{round(now - loop_start, 3)} s. Image capture took {round(img_capture_end - img_capture_start, 3)} s. Face detect took {round(now - face_detect_start, 3)} s.")
