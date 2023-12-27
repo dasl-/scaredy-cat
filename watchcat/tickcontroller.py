@@ -39,7 +39,7 @@ class TickController:
 
     # Returns boolean: true if we read a message within the timeout, false otherwise
     def __readAndRespondToControlMessage(self, timeout_s):
-        signal = None
+        signal = self.RUN_SIGNAL
         if self.__unix_socket_helper.is_ready_to_read(timeout_s):
             try:
                 signal = self.__unix_socket_helper.recv_msg()
@@ -47,9 +47,6 @@ class TickController:
                 self.__logger.error(f'Caught exception: {traceback.format_exc()}')
                 raise e
         else:
-            return False
-
-        if signal is None:
             return False
 
         if signal == self.RUN_SIGNAL:
@@ -70,18 +67,16 @@ class TickController:
         for i in range(5):
             GPIO.output(MAGNET_PIN, True) # turn magnet on
             self.__logger.info('magnet on')
-            time.sleep(0.5)
-            # # timeout_s = 0.5: wait up to 0.5s for a message
-            # if self.__readAndRespondToControlMessage(timeout_s = 0.5):
-            #     self.__logger.info('magnet: got control message')
-            #     GPIO.output(MAGNET_PIN, False) # turn magnet off
-            #     break
+            # timeout_s = 0.5: wait up to 0.5s for a message
+            if self.__readAndRespondToControlMessage(timeout_s = 0.5):
+                self.__logger.info('magnet: got control message')
+                GPIO.output(MAGNET_PIN, False) # turn magnet off
+                break
             GPIO.output(MAGNET_PIN, False) # turn magnet off
             self.__logger.info('magnet off')
-            time.sleep(0.5)
-            # if self.__readAndRespondToControlMessage(timeout_s = 0.5):
-            #     self.__logger.info('magnet: got control message')
-            #     break
+            if self.__readAndRespondToControlMessage(timeout_s = 0.5):
+                self.__logger.info('magnet: got control message')
+                break
 
     def __pause(self):
         self.__paused = True
