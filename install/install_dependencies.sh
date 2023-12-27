@@ -26,6 +26,9 @@ updateAndInstallPackages(){
         python3-opengl
 
         python3-opencv
+
+        # reduce jitter in controlling servos with GPIO
+        python3-pigpio
     )
 
     # shellcheck disable=SC2048,SC2086

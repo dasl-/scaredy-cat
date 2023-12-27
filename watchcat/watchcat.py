@@ -7,7 +7,7 @@ import traceback
 
 from watchcat.logger import Logger
 from watchcat.unixsockethelper import UnixSocketHelper
-from watchcat.motor import Motor
+from watchcat.tickcontroller import TickController
 
 # See specs for raspberry pi camera module 3:
 # https://www.raspberrypi.com/documentation/accessories/camera.html#hardware-specification
@@ -70,7 +70,7 @@ class WatchCat:
         self.__face_locations = []
 
         self.__unix_socket_helper = UnixSocketHelper()
-        self.__unix_socket_helper.connect(Motor.UNIX_SOCKET_PATH)
+        self.__unix_socket_helper.connect(TickController.UNIX_SOCKET_PATH)
 
     def run(self):
         face_detector = cv2.CascadeClassifier(f"{os.path.dirname(os.path.dirname(__file__))}/data/haarcascade_frontalface_default.xml")
@@ -97,8 +97,8 @@ class WatchCat:
             self.__face_locations = face_detector.detectMultiScale(grey, 1.1, 5)
             now = time.time()
             if (len(self.__face_locations) > 0):
-                self.__unix_socket_helper.send_msg(Motor.PAUSE_SIGNAL) # TODO: this seems backwards?
+                self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL) # TODO: this seems backwards?
             else:
-                self.__unix_socket_helper.send_msg(Motor.RUN_SIGNAL)
+                self.__unix_socket_helper.send_msg(TickController.RUN_SIGNAL)
             self.__logger.info(f"Found {len(self.__face_locations)} faces in image. Loop took " +
                 f"{round(now - loop_start, 3)} s. Image capture took {round(img_capture_end - img_capture_start, 3)} s. Face detect took {round(now - face_detect_start, 3)} s.")

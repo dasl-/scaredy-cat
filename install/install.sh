@@ -39,19 +39,21 @@ parseOpts(){
 setupSystemdServices(){
     info "Setting up systemd services..."
 
-cat <<-EOF | sudo tee /etc/systemd/system/watchcat_motor.service >/dev/null
+cat <<-EOF | sudo tee /etc/systemd/system/watchcat_tick_controller.service >/dev/null
 [Unit]
-Description=watchcat_motor
+Description=watchcat_tick_controller
 After=network-online.target
 Wants=network-online.target
+BindsTo=pigpiod.service
+After=pigpiod.service
 
 [Service]
 Environment=HOME=/root
-ExecStart=$BASE_DIR/bin/motor
+ExecStart=$BASE_DIR/bin/tick_controller
 Restart=on-failure
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=WATCHCAT_MOTOR
+SyslogIdentifier=WATCHCAT_TICK_CONTROLLER
 
 [Install]
 WantedBy=multi-user.target
@@ -62,8 +64,8 @@ cat <<-EOF | sudo tee /etc/systemd/system/watchcat_main.service >/dev/null
 Description=watchcat_main
 After=network-online.target
 Wants=network-online.target
-BindsTo=watchcat_motor.service
-After=watchcat_motor.service
+BindsTo=watchcat_tick_controller.service
+After=watchcat_tick_controller.service
 
 [Service]
 Environment=HOME=/root
@@ -80,8 +82,10 @@ EOF
     sudo chown root:root /etc/systemd/system/watchcat_*.service
     sudo chmod 644 /etc/systemd/system/watchcat_*.service
     sudo systemctl enable /etc/systemd/system/watchcat_*.service
+    sudo systemctl enable pigpiod.service
 
     sudo systemctl daemon-reload
+    sudo systemctl restart pigpiod.service
     sudo systemctl restart $(ls /etc/systemd/system/watchcat_*.service | cut -d'/' -f5)
 }
 

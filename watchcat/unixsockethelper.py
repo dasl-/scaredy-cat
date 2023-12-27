@@ -87,8 +87,13 @@ class UnixSocketHelper:
         self.__is_connection_socket_open = True
         return self
 
-    def is_ready_to_read(self):
-        is_ready_to_read, ignore1, ignore2 = select.select([self.__connection_socket], [], [], 0)
+    # timeout_s: When the timeout argument is omitted the function blocks until at least one file
+    #   descriptor is ready. A time-out value of zero specifies a poll and never blocks.
+    def is_ready_to_read(self, timeout_s=0):
+        if timeout_s is None:
+            is_ready_to_read, ignore1, ignore2 = select.select([self.__connection_socket], [], [])
+        else:
+            is_ready_to_read, ignore1, ignore2 = select.select([self.__connection_socket], [], [], timeout_s)
         return bool(is_ready_to_read)
 
     # param: msg - string
