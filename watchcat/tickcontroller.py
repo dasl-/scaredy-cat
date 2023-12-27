@@ -24,22 +24,13 @@ class TickController:
         atexit.register(self.__cleanupGPIO)
         self.__pwm = self.__setupGpio()
 
+        self.__acceptSocket()
+
         # Reset position in case it was last stopped in paused state
         self.__unpause()
         self.__paused = False
 
     def run(self):
-        self.__unix_socket_helper = UnixSocketHelper()
-        socket = UnixSocketHelper().create_server_unix_socket(self.UNIX_SOCKET_PATH)
-        self.__unix_socket_helper.set_server_socket(socket)
-
-        self.__logger.info('Waiting to accept socket...')
-        try:
-            self.__unix_socket_helper.accept()
-        except Exception as e:
-            self.__logger.error(f'Caught exception: {traceback.format_exc()}')
-            raise e
-        self.__logger.info('Socket accepted!')
         while (True):
             # timeout_s = None: block until there's a message
             self.__readAndRespondToControlMessage(timeout_s = None)
@@ -97,6 +88,19 @@ class TickController:
         GPIO.setup(MAGNET_PIN, GPIO.OUT)
 
         return pwm
+
+    def __acceptSocket(self):
+        self.__unix_socket_helper = UnixSocketHelper()
+        socket = UnixSocketHelper().create_server_unix_socket(self.UNIX_SOCKET_PATH)
+        self.__unix_socket_helper.set_server_socket(socket)
+
+        self.__logger.info('Waiting to accept socket...')
+        try:
+            self.__unix_socket_helper.accept()
+        except Exception as e:
+            self.__logger.error(f'Caught exception: {traceback.format_exc()}')
+            raise e
+        self.__logger.info('Socket accepted!')
 
     # is this necessary?
     def __cleanupGPIO(self):
