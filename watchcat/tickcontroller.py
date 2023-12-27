@@ -39,7 +39,7 @@ class TickController:
 
     # Returns boolean: true if we read a message within the timeout, false otherwise
     def __readAndRespondToControlMessage(self, timeout_s):
-        signal = self.RUN_SIGNAL
+        signal = self.UNPAUSE_SIGNAL
         if self.__unix_socket_helper.is_ready_to_read(timeout_s):
             try:
                 signal = self.__unix_socket_helper.recv_msg()
@@ -49,7 +49,7 @@ class TickController:
         else:
             return False
 
-        if signal == self.RUN_SIGNAL:
+        if signal == self.UNPAUSE_SIGNAL:
             self.__unpause()
         elif signal == self.PAUSE_SIGNAL:
             self.__pause()
