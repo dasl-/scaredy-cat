@@ -12,6 +12,9 @@ MAGNET_PIN = 27 # Use this pin to tell the electromagnet to turn on or off
 SERVO_PAUSE_POSITION = 1000
 SERVO_UNPAUSE_POSITION = 500
 
+PAUSE_SIGNAL = 'pause'
+RUN_SIGNAL = 'run'
+
 class TickController:
 
     def __init__(self):
