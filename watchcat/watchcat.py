@@ -100,7 +100,7 @@ class WatchCat:
             if len(self.__face_locations) > 0 and not is_paused:
                 self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL) # TODO: this seems backwards?
                 is_paused = True
-            elif is_paused:
+            elif len(self.__face_locations) <= 0 and is_paused:
                 self.__unix_socket_helper.send_msg(TickController.UNPAUSE_SIGNAL)
                 is_paused = False
             self.__logger.info(f"Found {len(self.__face_locations)} faces in image. Loop took " +
