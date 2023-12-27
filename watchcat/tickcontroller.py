@@ -39,10 +39,11 @@ class TickController:
 
     # Returns boolean: true if we read a message within the timeout, false otherwise
     def __readAndRespondToControlMessage(self, timeout_s):
-        signal = self.UNPAUSE_SIGNAL
+        signal = None
         if self.__unix_socket_helper.is_ready_to_read(timeout_s):
             try:
                 signal = self.__unix_socket_helper.recv_msg()
+                self.__logger.info(f'got control message: {signal}')
             except Exception as e:
                 self.__logger.error(f'Caught exception: {traceback.format_exc()}')
                 raise e
