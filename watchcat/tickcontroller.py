@@ -19,7 +19,7 @@ class TickController:
         self.__logger.info("Starting tick controller...")
 
         atexit.register(self.__cleanupGPIO)
-        self.__pwm = self.__setupGPIO()
+        self.__pwm = self.__setupGpio()
 
         # Reset position in case it was last stopped in paused state
         self.__unpause()
