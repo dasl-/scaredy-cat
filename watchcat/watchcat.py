@@ -74,6 +74,7 @@ class WatchCat:
 
     def run(self):
         face_detector = cv2.CascadeClassifier(f"{os.path.dirname(os.path.dirname(__file__))}/data/haarcascade_frontalface_default.xml")
+        is_paused = False
         while True:
             loop_start = time.time()
             self.__logger.info("Capturing image...")
@@ -96,9 +97,9 @@ class WatchCat:
             # * https://github.com/raspberrypi/picamera2/blob/main/examples/opencv_face_detect.py
             self.__face_locations = face_detector.detectMultiScale(grey, 1.1, 5)
             now = time.time()
-            if (len(self.__face_locations) > 0):
+            if len(self.__face_locations) > 0 and not is_paused:
                 self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL) # TODO: this seems backwards?
-            else:
-                self.__unix_socket_helper.send_msg(TickController.RUN_SIGNAL)
+            elif is_paused:
+                self.__unix_socket_helper.send_msg(TickController.UNPAUSE_SIGNAL)
             self.__logger.info(f"Found {len(self.__face_locations)} faces in image. Loop took " +
                 f"{round(now - loop_start, 3)} s. Image capture took {round(img_capture_end - img_capture_start, 3)} s. Face detect took {round(now - face_detect_start, 3)} s.")

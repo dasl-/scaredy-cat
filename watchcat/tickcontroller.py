@@ -2,6 +2,7 @@ import atexit
 import pigpio
 import RPi.GPIO as GPIO
 import traceback
+import time
 
 from watchcat.unixsockethelper import UnixSocketHelper
 from watchcat.logger import Logger
@@ -15,7 +16,7 @@ SERVO_UNPAUSE_POSITION = 500
 class TickController:
 
     PAUSE_SIGNAL = 'pause'
-    RUN_SIGNAL = 'run'
+    UNPAUSE_SIGNAL = 'unpause'
     UNIX_SOCKET_PATH = '/tmp/motor_unix_socket'
 
     def __init__(self):
@@ -38,7 +39,7 @@ class TickController:
 
     # Returns boolean: true if we read a message within the timeout, false otherwise
     def __readAndRespondToControlMessage(self, timeout_s):
-        signal = self.RUN_SIGNAL
+        signal = None
         if self.__unix_socket_helper.is_ready_to_read(timeout_s):
             try:
                 signal = self.__unix_socket_helper.recv_msg()
@@ -46,6 +47,9 @@ class TickController:
                 self.__logger.error(f'Caught exception: {traceback.format_exc()}')
                 raise e
         else:
+            return False
+
+        if signal is None:
             return False
 
         if signal == self.RUN_SIGNAL:
@@ -65,13 +69,19 @@ class TickController:
         # Pulse the magnet on and off 5 times to get the pendulum swinging
         for i in range(5):
             GPIO.output(MAGNET_PIN, True) # turn magnet on
-            # timeout_s = 0.5: wait up to 0.5s for a message
-            if self.__readAndRespondToControlMessage(timeout_s = 0.5):
-                GPIO.output(MAGNET_PIN, False) # turn magnet off
-                break
+            self.__logger.info('magnet on')
+            time.sleep(0.5)
+            # # timeout_s = 0.5: wait up to 0.5s for a message
+            # if self.__readAndRespondToControlMessage(timeout_s = 0.5):
+            #     self.__logger.info('magnet: got control message')
+            #     GPIO.output(MAGNET_PIN, False) # turn magnet off
+            #     break
             GPIO.output(MAGNET_PIN, False) # turn magnet off
-            if self.__readAndRespondToControlMessage(timeout_s = 0.5):
-                break
+            self.__logger.info('magnet off')
+            time.sleep(0.5)
+            # if self.__readAndRespondToControlMessage(timeout_s = 0.5):
+            #     self.__logger.info('magnet: got control message')
+            #     break
 
     def __pause(self):
         self.__paused = True
