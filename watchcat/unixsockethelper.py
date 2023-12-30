@@ -51,6 +51,11 @@ class UnixSocketHelper:
         unix_socket.bind(socket_path)
         self.set_server_unix_socket_timeout(unix_socket)
         unix_socket.listen(16)
+
+        # Allow all users access to the socket, even if it was created by a different user
+        # This makes it easier for manual debugging using the default "pi" user to interact
+        # with a socket created by "root" without encountering permissions errors
+        os.chmod(socket_path, 0o0777)
         return unix_socket
 
     # don't let socket.accept() block indefinitely if something goes wrong
