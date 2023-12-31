@@ -20,6 +20,9 @@ class WatchCat:
 
     __ASPECT_RATIO = 16 / 9
 
+    __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 3
+    __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 5
+
     # width, height: if both width and height are set, we will set the
     #   dimensions of the captured camera image to these dimensions. The
     #   units are pixels. Using smaller dimensions will speed up face
@@ -32,6 +35,8 @@ class WatchCat:
         self.__logger.info("Starting WatchCat...")
 
         self.__picam2 = picamera2.Picamera2()
+        self.__num_consecutive_face_frames = 0
+        self.__num_consecutive_empty_frames = 0
 
         main = {}
         if width is not None and height is not None:
@@ -45,13 +50,17 @@ class WatchCat:
             display = 'main'
 
             def draw_faces(request):
+                if self.__num_consecutive_face_frames < self.__NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE:
+                    return
+
                 (w0, h0) = self.__picam2.stream_configuration("main")["size"]
                 (w1, h1) = self.__picam2.stream_configuration("main")["size"]
-                self.__logger.info(f"draw_faces dims: {self.__face_locations} {self.__picam2} {w0} {h0} {w1} {h1}")
+                self.__logger.info(f"draw_faces dims: {self.__confirmed_face_locations} {self.__picam2} {w0} {h0} {w1} {h1}")
                 with picamera2.MappedArray(request, "main") as m:
-                    for f in self.__face_locations:
+                    for f in self.__confirmed_face_locations:
                         (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
                         cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
+                        self.__logger.info(f"draw_faces face width x height: {w} x {h}")
 
             self.__picam2.post_callback = draw_faces
 
@@ -67,13 +76,16 @@ class WatchCat:
         self.__picam2.set_controls({"AfMode": libcamera.controls.AfModeEnum.Continuous, "AfRange": libcamera.controls.AfRangeEnum.Full, "AfSpeed":libcamera.controls.AfSpeedEnum.Fast}) # TODO: is this working?
 
         self.__logger.info("Finished starting WatchCat.")
-        self.__face_locations = []
+        self.__confirmed_face_locations = []
 
         self.__unix_socket_helper = UnixSocketHelper()
         self.__unix_socket_helper.connect(TickController.UNIX_SOCKET_PATH)
 
     def run(self):
-        face_detector = cv2.CascadeClassifier(f"{os.path.dirname(os.path.dirname(__file__))}/data/haarcascade_frontalface_default.xml")
+        # haarcascade_frontalface_alt2 seemed to be the best model for detecting Ryans' face (beard + glasses)
+        # we also tried haarcascade_frontalface_default, haarcascade_frontalface_alt, haarcascade_frontalface_alt_tree, and
+        # haarcascade_eye_tree_eyeglasses
+        face_detector = cv2.CascadeClassifier(f"{os.path.dirname(os.path.dirname(__file__))}/data/haarcascade_frontalface_alt2.xml")
         is_paused = False
         while True:
             loop_start = time.time()
@@ -84,24 +96,36 @@ class WatchCat:
             output = self.__picam2.capture_array()
             img_capture_end = time.time()
 
-            metadata = self.__picam2.capture_metadata()
-            self.__logger.info(f"Done capturing image. Output shape: {output.shape}. Lens position: {metadata['LensPosition']}")
-
             face_detect_start = time.time()
             # Find all the faces and face encodings in the current frame of video
-            grey = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)
+            gray = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)
+            gray = cv2.equalizeHist(gray)
 
             # detectMultiScale docs:
             # * https://docs.opencv.org/4.7.0/d1/de5/classcv_1_1CascadeClassifier.html#aaf8181cb63968136476ec4204ffca498
             # * https://stackoverflow.com/a/55628240
             # * https://github.com/raspberrypi/picamera2/blob/main/examples/opencv_face_detect.py
-            self.__face_locations = face_detector.detectMultiScale(grey, 1.1, 5)
+            # * https://answers.opencv.org/question/10654/how-does-the-parameter-scalefactor-in-detectmultiscale-affect-face-detection/
+            # * https://stackoverflow.com/questions/22249579/opencv-detectmultiscale-minneighbors-parameter
+            face_locations = face_detector.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=4, maxSize=(140,140), minSize=(15, 15))
             now = time.time()
-            if len(self.__face_locations) > 0 and not is_paused:
-                self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL) # TODO: this seems backwards?
-                is_paused = True
-            elif len(self.__face_locations) <= 0 and is_paused:
-                self.__unix_socket_helper.send_msg(TickController.UNPAUSE_SIGNAL)
-                is_paused = False
-            self.__logger.info(f"Found {len(self.__face_locations)} faces in image. Loop took " +
+            if len(face_locations) > 0:
+                self.__num_consecutive_face_frames = self.__num_consecutive_face_frames + 1
+                if self.__num_consecutive_face_frames >= self.__NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE:
+                    self.__num_consecutive_empty_frames = 0
+                    self.__confirmed_face_locations = face_locations
+                    if not is_paused:
+                        self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL)
+                        is_paused = True
+                        self.__logger.info("Found a confirmed face")
+            elif len(face_locations) <= 0:
+                self.__num_consecutive_empty_frames = self.__num_consecutive_empty_frames + 1
+                if self.__num_consecutive_empty_frames >= self.__NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY:
+                    self.__num_consecutive_face_frames = 0
+                    self.__confirmed_face_locations = []
+                    if is_paused:
+                        self.__unix_socket_helper.send_msg(TickController.UNPAUSE_SIGNAL)
+                        is_paused = False
+                        self.__logger.info("Lost a confirmed face [found]")
+            self.__logger.info(f"Found {len(face_locations)} faces in image. Loop took " +
                 f"{round(now - loop_start, 3)} s. Image capture took {round(img_capture_end - img_capture_start, 3)} s. Face detect took {round(now - face_detect_start, 3)} s.")
