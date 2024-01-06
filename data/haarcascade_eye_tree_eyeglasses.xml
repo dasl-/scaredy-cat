@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <!--
+    watchcat note: taken from: https://github.com/opencv/opencv/blob/4.x/data/haarcascades/
+
     Tree-based 20x20 frontal eye detector with better handling of eyeglasses.
     Created by Shameem Hameed (http://umich.edu/~shameem)
 
