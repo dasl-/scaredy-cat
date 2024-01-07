@@ -105,7 +105,19 @@ class ScaredyCat:
     which might result in worse face detection. We haven't experimented to decide if it's
     worth the tradeoff yet: https://github.com/raspberrypi/picamera2/issues/914#issuecomment-1880177348
 
-    See:
+    Relatedly, if we don't explicitly set a FrameRate, the loop speed varies depending on the
+    brightness of the room. This is because the camera spends a longer time exposing the image
+    in a dark room.
+
+    In a dark room, we might see something like this:
+
+        Found 0 faces in image. Loop took 0.119 s. Image capture took 0.056 s. Face detect took 0.063 s. Image dimensions: (252, 150, 3)
+
+    Whereas in a bright room, it will be faster:
+
+        Found 0 faces in image. Loop took 0.062 s. Image capture took 0.002 s. Face detect took 0.061 s. Image dimensions: (252, 150, 3)
+
+    See also:
     * https://gist.github.com/dasl-/768b53593a420f740933063b7a335fdc
     * https://github.com/dasl-/scaredy-cat/commit/68463a40320fd733b68525f9a4db3dea92e48567
     """
