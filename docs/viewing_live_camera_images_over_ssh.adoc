@@ -14,7 +14,8 @@ brew install --cask xquartz
 ## Viewing live feed
 1. Open XQuartz
 1. In an XQuartz terminal: `ssh -v -XY <user>@<pi hostname or IP>`
-1. ...etc... e.g. `./bin/watchcat --show-preview`
+1. Stop the service, if it's running, so that we don't have two copies of the program running: `sudo systemctl stop watchcat_main.service`
+1. Run the program with the preview flag: `./bin/watchcat --show-preview`
 
 ## Known issues
 

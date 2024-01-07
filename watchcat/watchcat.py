@@ -19,10 +19,10 @@ class WatchCat:
     __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 3
     __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 5
 
-    # width: set the width of the captured camera image. The units are pixels.
-    #   Height will be set automatically such that it is proportionate with
-    #   the camera's native resolution. Using smaller dimensions will speed up
-    #   face detection.
+    # width, height: if both width and height are set, we will set the
+    #   dimensions of the captured camera image to these dimensions. The
+    #   units are pixels. Using smaller dimensions will speed up face
+    #   detection.
     #
     # mid_col_pct: Middle column percentage. The portion of the captured image
     #   to capture for face detection. Should be a float in (0,1]
@@ -101,7 +101,9 @@ class WatchCat:
     can be deceptive. Make sure to pay attention to the overall loop timing when making
     performance optimizations.
 
-    See: https://gist.github.com/dasl-/768b53593a420f740933063b7a335fdc
+    See:
+    * https://gist.github.com/dasl-/768b53593a420f740933063b7a335fdc
+    * https://github.com/dasl-/watchcat/commit/68463a40320fd733b68525f9a4db3dea92e48567
     """
     def run(self):
         # haarcascade_frontalface_alt2 seemed to be the best model for detecting Ryans' face (beard + glasses)
