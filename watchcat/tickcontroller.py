@@ -10,7 +10,7 @@ from watchcat.logger import Logger
 SERVO_PIN = 18 # Use this pin to tell the servo to hold or release the pendulum
 MAGNET_PIN = 23 # Use this pin to tell the electromagnet to turn on or off
 
-SERVO_PAUSE_POSITION = 1070 # 1030 seems like the minimum amount
+SERVO_PAUSE_POSITION = 1050 # 1030 seems like the minimum amount
 SERVO_UNPAUSE_POSITION = 800 # 860 working, 890 is too much
 
 class TickController:
@@ -66,13 +66,13 @@ class TickController:
         self.__paused = False
 
         # Move the servo to release the hold on the pendulum
-        # self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_UNPAUSE_POSITION)
-        
+        #self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_UNPAUSE_POSITION)
+
         # move slowly to the unpaused position (to reduce motor volume)
         nextPosition = SERVO_PAUSE_POSITION
         while (nextPosition > SERVO_UNPAUSE_POSITION):
             self.__pwm.set_servo_pulsewidth(SERVO_PIN, nextPosition)
-            nextPosition = nextPosition - 1
+            nextPosition = nextPosition - 10
             time.sleep(0.005)
 
         # Pulse the magnet on and off 5 times to get the pendulum swinging
@@ -99,13 +99,13 @@ class TickController:
         self.__paused = True
 
         # Move the servo to hold the pendulum
-        # self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_PAUSE_POSITION)
+        #self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_PAUSE_POSITION)
 
         # move slowly to the paused position (to reduce motor volume)
         nextPosition = SERVO_UNPAUSE_POSITION
         while (nextPosition < SERVO_PAUSE_POSITION):
             self.__pwm.set_servo_pulsewidth(SERVO_PIN, nextPosition)
-            nextPosition = nextPosition + 1
+            nextPosition = nextPosition + 10
             time.sleep(0.005)
 
     def __setupGpio(self):
