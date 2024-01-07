@@ -21,7 +21,7 @@ updateAndInstallPackages(){
         python3-picamera2
 
         # enable viewing camera preview images over ssh
-        # See: https://github.com/dasl-/watchcat/blob/main/docs/viewing_live_camera_images_over_ssh.adoc
+        # See: https://github.com/dasl-/scaredy-cat/blob/main/docs/viewing_live_camera_images_over_ssh.adoc
         python3-pyqt5
         python3-opengl
 

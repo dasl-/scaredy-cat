@@ -5,16 +5,16 @@ import libcamera
 import os
 import traceback
 
-from watchcat.logger import Logger
-from watchcat.unixsockethelper import UnixSocketHelper
-from watchcat.tickcontroller import TickController
+from scaredycat.logger import Logger
+from scaredycat.unixsockethelper import UnixSocketHelper
+from scaredycat.tickcontroller import TickController
 
 # See specs for raspberry pi camera module 3:
 # https://www.raspberrypi.com/documentation/accessories/camera.html#hardware-specification
 #
 # See picamera2 library docs:
 # https://datasheets.raspberrypi.com/camera/picamera2-manual.pdf
-class WatchCat:
+class ScaredyCat:
 
     __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 3
     __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 5
@@ -40,7 +40,7 @@ class WatchCat:
     #   images via SSH X11 forwarding.
     def __init__(self, width=None, height=None, mid_col_pct=1 / 3, show_preview=False):
         self.__logger = Logger().set_namespace(self.__class__.__name__)
-        self.__logger.info("Starting WatchCat...")
+        self.__logger.info("Starting ScaredyCat...")
 
         self.__picam2 = picamera2.Picamera2()
         self.__num_consecutive_face_frames = 0
@@ -89,7 +89,7 @@ class WatchCat:
         self.__unix_socket_helper = UnixSocketHelper()
         self.__unix_socket_helper.connect(TickController.UNIX_SOCKET_PATH)
 
-        self.__logger.info("Finished starting WatchCat.")
+        self.__logger.info("Finished starting ScaredyCat.")
 
     """
     A note on timing the main loop - we provide 3 timings in the logs:
@@ -107,7 +107,7 @@ class WatchCat:
 
     See:
     * https://gist.github.com/dasl-/768b53593a420f740933063b7a335fdc
-    * https://github.com/dasl-/watchcat/commit/68463a40320fd733b68525f9a4db3dea92e48567
+    * https://github.com/dasl-/scaredy-cat/commit/68463a40320fd733b68525f9a4db3dea92e48567
     """
     def run(self):
         # haarcascade_frontalface_alt2 seemed to be the best model for detecting Ryans' face (beard + glasses)

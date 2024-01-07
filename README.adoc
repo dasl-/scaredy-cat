@@ -1,4 +1,4 @@
-# watchcat
+# scaredy cat
 :toc:
 :toclevels: 5
 
@@ -12,21 +12,21 @@ https://photos.app.goo.gl/FYvWjFjmNzPmTfJi7[Photos & Videos]
 . `./install/install.sh`
 
 ## Administration
-There are 2 services: watchcat_tick_controller.service and watchcat_main.service. Services can be restarted via:
+There are 2 services: scaredycat_tick_controller.service and scaredycat_main.service. Services can be restarted via:
 ....
-sudo systemctl restart watchcat_main.service watchcat_tick_controller.service
+sudo systemctl restart scaredycat_main.service scaredycat_tick_controller.service
 ....
 
 Logs can be viewed via:
 ....
-journalctl | grep WATCHCAT
+journalctl | grep SCAREDYCAT
 ....
 
 link:docs/viewing_live_camera_images_over_ssh.adoc[Preview the camera footage].
 
 ## Materials
 . https://www.amazon.com/gp/product/B0019IBD3U/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1[Kit Cat Klock Gentlemen The Original (Classic Black)] (These come in two sizes - small and large. Make sure you get the large [original] one)
-. 3D printed models: https://github.com/dasl-/watchcat/tree/main/models
+. 3D printed models: https://github.com/dasl-/scaredy-cat/tree/main/models
 . Raspberry pi 4b
 . https://www.pishop.us/product/raspberry-pi-camera-module-3/[Raspberry Pi Camera Module 3]
 . Servo, electromagnet, and associated control circuitry

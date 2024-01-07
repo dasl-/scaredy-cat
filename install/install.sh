@@ -39,9 +39,9 @@ parseOpts(){
 setupSystemdServices(){
     info "Setting up systemd services..."
 
-cat <<-EOF | sudo tee /etc/systemd/system/watchcat_tick_controller.service >/dev/null
+cat <<-EOF | sudo tee /etc/systemd/system/scaredycat_tick_controller.service >/dev/null
 [Unit]
-Description=watchcat_tick_controller
+Description=scaredycat_tick_controller
 After=network-online.target
 Wants=network-online.target
 BindsTo=pigpiod.service
@@ -53,40 +53,40 @@ ExecStart=$BASE_DIR/bin/tick_controller
 Restart=on-failure
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=WATCHCAT_TICK_CONTROLLER
+SyslogIdentifier=SCAREDYCAT_TICK_CONTROLLER
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-cat <<-EOF | sudo tee /etc/systemd/system/watchcat_main.service >/dev/null
+cat <<-EOF | sudo tee /etc/systemd/system/scaredycat_main.service >/dev/null
 [Unit]
-Description=watchcat_main
+Description=scaredycat_main
 After=network-online.target
 Wants=network-online.target
-BindsTo=watchcat_tick_controller.service
-After=watchcat_tick_controller.service
+BindsTo=scaredycat_tick_controller.service
+After=scaredycat_tick_controller.service
 
 [Service]
 Environment=HOME=/root
-ExecStart=$BASE_DIR/bin/watchcat
+ExecStart=$BASE_DIR/bin/scaredycat
 Restart=on-failure
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=WATCHCAT_MAIN
+SyslogIdentifier=SCAREDYCAT_MAIN
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-    sudo chown root:root /etc/systemd/system/watchcat_*.service
-    sudo chmod 644 /etc/systemd/system/watchcat_*.service
-    sudo systemctl enable /etc/systemd/system/watchcat_*.service
+    sudo chown root:root /etc/systemd/system/scaredycat_*.service
+    sudo chmod 644 /etc/systemd/system/scaredycat_*.service
+    sudo systemctl enable /etc/systemd/system/scaredycat_*.service
     sudo systemctl enable pigpiod.service
 
     sudo systemctl daemon-reload
     sudo systemctl restart pigpiod.service
-    sudo systemctl restart $(ls /etc/systemd/system/watchcat_*.service | cut -d'/' -f5)
+    sudo systemctl restart $(ls /etc/systemd/system/scaredycat_*.service | cut -d'/' -f5)
 }
 
 
