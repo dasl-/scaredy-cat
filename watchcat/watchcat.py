@@ -101,6 +101,10 @@ class WatchCat:
     can be deceptive. Make sure to pay attention to the overall loop timing when making
     performance optimizations.
 
+    By setting a FrameRate, we could go even faster. But the tradeoff is we'd get darker images,
+    which might result in worse face detection. We haven't experimented to decide if it's
+    worth the tradeoff yet: https://github.com/raspberrypi/picamera2/issues/914#issuecomment-1880177348
+
     See:
     * https://gist.github.com/dasl-/768b53593a420f740933063b7a335fdc
     * https://github.com/dasl-/watchcat/commit/68463a40320fd733b68525f9a4db3dea92e48567
