@@ -29,6 +29,7 @@ class TickController:
         self.__acceptSocket()
 
         # Set initial state, including resetting position of servo and pulsing magnet.
+        self.__paused = None
         self.__unpause()
 
     def run(self):
