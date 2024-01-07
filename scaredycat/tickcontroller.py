@@ -28,10 +28,8 @@ class TickController:
 
         self.__acceptSocket()
 
-        # Reset position in case it was last stopped in paused state
-        self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_UNPAUSE_POSITION)
-        # self.__unpause()
-        self.__paused = False
+        # Set initial state, including resetting position of servo and pulsing magnet.
+        self.__unpause()
 
     def run(self):
         while (True):
@@ -60,13 +58,13 @@ class TickController:
         return True
 
     def __unpause(self):
-        if (not self.__paused):
+        if self.__paused is False:
             return
 
         self.__paused = False
 
         # Move the servo to release the hold on the pendulum
-        #self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_UNPAUSE_POSITION)
+        # self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_UNPAUSE_POSITION)
 
         # move slowly to the unpaused position (to reduce motor volume)
         nextPosition = SERVO_PAUSE_POSITION
@@ -99,7 +97,7 @@ class TickController:
         self.__paused = True
 
         # Move the servo to hold the pendulum
-        #self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_PAUSE_POSITION)
+        # self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_PAUSE_POSITION)
 
         # move slowly to the paused position (to reduce motor volume)
         nextPosition = SERVO_UNPAUSE_POSITION
