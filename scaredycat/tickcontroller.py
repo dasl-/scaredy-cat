@@ -4,8 +4,8 @@ import RPi.GPIO as GPIO
 import traceback
 import time
 
-from scaredy.unixsockethelper import UnixSocketHelper
-from scaredy.logger import Logger
+from scaredycat.unixsockethelper import UnixSocketHelper
+from scaredycat.logger import Logger
 
 SERVO_PIN = 18 # Use this pin to tell the servo to hold or release the pendulum
 MAGNET_PIN = 23 # Use this pin to tell the electromagnet to turn on or off
