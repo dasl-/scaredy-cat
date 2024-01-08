@@ -35,7 +35,14 @@ class TickController:
     def run(self):
         while (True):
             # timeout_s = None: block until there's a message
-            self.__readAndRespondToControlMessage(timeout_s = None)
+            self.__readAndRespondToControlMessage(timeout_s = 0.5)
+            if not self.__paused:
+                GPIO.output(MAGNET_PIN, True) # turn magnet on
+                self.__logger.info('magnet on')
+            self.__readAndRespondToControlMessage(timeout_s = 0.5)
+            if not self.__paused:
+                GPIO.output(MAGNET_PIN, False) # turn magnet off
+                self.__logger.info('magnet off')
 
     # Returns boolean: true if we read a message within the timeout, false otherwise
     def __readAndRespondToControlMessage(self, timeout_s):
@@ -74,6 +81,7 @@ class TickController:
             nextPosition = nextPosition - 10
             time.sleep(0.005)
 
+        """
         # Pulse the magnet on and off 5 times to get the pendulum swinging
         for i in range(5):
             GPIO.output(MAGNET_PIN, True) # turn magnet on
@@ -90,12 +98,15 @@ class TickController:
             # if self.__readAndRespondToControlMessage(timeout_s = 0.5):
             #     self.__logger.info('magnet: got control message')
             #     break
+        """
 
     def __pause(self):
         if (self.__paused):
             return
 
         self.__paused = True
+
+        GPIO.output(MAGNET_PIN, False) # turn magnet off
 
         # Move the servo to hold the pendulum
         # self.__pwm.set_servo_pulsewidth(SERVO_PIN, SERVO_PAUSE_POSITION)
