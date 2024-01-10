@@ -46,6 +46,7 @@ class ScaredyCat:
         self.__num_consecutive_face_frames = 0
         self.__num_consecutive_empty_frames = 0
         self.__confirmed_face_locations = []
+        self.__unconfirmed_face_locations = []
         self.__mid_col_pct = mid_col_pct
         self.__crop_x0 = None
         self.__crop_x1 = None
@@ -160,11 +161,15 @@ class ScaredyCat:
                 if self.__num_consecutive_face_frames >= self.__NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE:
                     self.__num_consecutive_empty_frames = 0
                     self.__confirmed_face_locations = face_locations
+                    self.__unconfirmed_face_locations = []
                     if not is_paused:
                         self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL)
                         is_paused = True
                         self.__logger.info("Found a confirmed face")
+                else:
+                    self.__unconfirmed_face_locations = face_locations
             elif len(face_locations) <= 0:
+                self.__unconfirmed_face_locations = []
                 self.__num_consecutive_empty_frames = self.__num_consecutive_empty_frames + 1
                 if self.__num_consecutive_empty_frames >= self.__NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY:
                     self.__num_consecutive_face_frames = 0
@@ -194,6 +199,12 @@ class ScaredyCat:
                     (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
                     x = x + self.__crop_x0
                     cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
+                    self.__logger.info(f"draw_faces face width x height: {w} x {h}")
+
+                for f in self.__unconfirmed_face_locations:
+                    (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
+                    x = x + self.__crop_x0
+                    cv2.rectangle(m.array, (x, y), (x + w, y + h), (255, 0, 0, 0))
                     self.__logger.info(f"draw_faces face width x height: {w} x {h}")
 
         self.__picam2.post_callback = draw_faces
