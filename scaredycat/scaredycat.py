@@ -138,7 +138,7 @@ class ScaredyCat:
         # https://github.com/opencv/opencv_zoo/blob/80f7c6aa030a87b3f9e8ab7d84f62f13d308c10f/models/face_detection_yunet/yunet.py#L15
         face_detector = cv2.FaceDetectorYN.create(
             model = os.path.abspath(os.path.dirname(__file__) + '/../data/face_detection_yunet_2023mar.onnx'),
-            input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h)
+            config="", input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h)
         )
         while True:
             loop_start = time.time()
