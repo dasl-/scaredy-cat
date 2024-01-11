@@ -4,6 +4,7 @@ import cv2
 import libcamera
 import os
 import traceback
+import numpy as np
 
 from scaredycat.logger import Logger
 from scaredycat.unixsockethelper import UnixSocketHelper
@@ -138,7 +139,7 @@ class ScaredyCat:
         # https://github.com/opencv/opencv_zoo/blob/80f7c6aa030a87b3f9e8ab7d84f62f13d308c10f/models/face_detection_yunet/yunet.py#L15
         face_detector = cv2.FaceDetectorYN.create(
             model = os.path.abspath(os.path.dirname(__file__) + '/../data/face_detection_yunet_2023mar.onnx'),
-            config="", input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h)
+            config="", input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h), score_threshold = 0.5
         )
         while True:
             loop_start = time.time()
@@ -153,7 +154,9 @@ class ScaredyCat:
             face_detect_start = time.time()
             # Find all the faces and face encodings in the current frame of video
 
-            face_locations = face_detector.detect(output)
+            ignore, face_locations = face_detector.detect(output)
+            if face_locations is None:
+                face_locations = []
             now = time.time()
             if len(face_locations) > 0:
                 self.__num_consecutive_face_frames = self.__num_consecutive_face_frames + 1
@@ -193,12 +196,17 @@ class ScaredyCat:
                 cv2.rectangle(img=m.array, pt1=(0, 0), pt2=(self.__crop_x0, h0), color=(0, 0, 0, 0), thickness=-1)
                 cv2.rectangle(img=m.array, pt1=(self.__crop_x1, 0), pt2=(w0, h0), color=(0, 0, 0, 0), thickness=-1)
 
+                if isinstance(self.__confirmed_face_locations, np.ndarray) and self.__confirmed_face_locations.size > 0:
+                    self.__confirmed_face_locations = self.__confirmed_face_locations[:, 0:4].astype(np.int16)
                 for f in self.__confirmed_face_locations:
                     (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
                     x = x + self.__crop_x0
                     cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
                     self.__logger.info(f"draw_faces face width x height: {w} x {h}")
 
+                self.__logger.info(f"unconf faces1: {self.__unconfirmed_face_locations}")
+                if isinstance(self.__unconfirmed_face_locations, np.ndarray) and self.__unconfirmed_face_locations.size > 0:
+                    self.__unconfirmed_face_locations = self.__unconfirmed_face_locations[:, 0:4].astype(np.int16)
                 for f in self.__unconfirmed_face_locations:
                     (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
                     x = x + self.__crop_x0
