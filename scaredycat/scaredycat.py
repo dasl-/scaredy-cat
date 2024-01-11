@@ -123,11 +123,23 @@ class ScaredyCat:
     * https://github.com/dasl-/scaredy-cat/commit/68463a40320fd733b68525f9a4db3dea92e48567
     """
     def run(self):
-        # haarcascade_frontalface_alt2 seemed to be the best model for detecting Ryans' face (beard + glasses)
-        # we also tried haarcascade_frontalface_default, haarcascade_frontalface_alt, haarcascade_frontalface_alt_tree, and
-        # haarcascade_eye_tree_eyeglasses
-        face_detector = cv2.CascadeClassifier(f"{os.path.dirname(os.path.dirname(__file__))}/data/haarcascade_frontalface_alt2.xml")
+
         is_paused = False
+
+        cam_img_w, cam_img_h = self.__picam2.camera_configuration()['main']['size']
+        cropped_img_w = cam_img_w * self.__mid_col_pct
+        self.__crop_x0 = (cam_img_w - cropped_img_w) / 2
+        self.__crop_x1 = int(round(self.__crop_x0 + cropped_img_w))
+        self.__crop_x0 = int(round(self.__crop_x0))
+
+        # See:
+        # https://docs.opencv.org/4.x/d0/dd4/tutorial_dnn_face.html
+        # https://docs.opencv.org/4.x/df/d20/classcv_1_1FaceDetectorYN.html#a42293cf2d64f8b69a707ab70d11925b3
+        # https://github.com/opencv/opencv_zoo/blob/80f7c6aa030a87b3f9e8ab7d84f62f13d308c10f/models/face_detection_yunet/yunet.py#L15
+        face_detector = cv2.FaceDetectorYN.create(
+            model = os.path.abspath(os.path.dirname(__file__) + '/../data/face_detection_yunet_2023mar.onnx'),
+            input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h)
+        )
         while True:
             loop_start = time.time()
             # Grab a single frame of video from the RPi camera as a numpy array
@@ -136,25 +148,12 @@ class ScaredyCat:
 
             # Crop the image with numpy. See a performance comparison of different cropping methods:
             # https://gist.github.com/dasl-/cda68e8fef981edf9727c5995129b864
-            if self.__crop_x0 is None:
-                crop_width = uncropped_output.shape[1] * self.__mid_col_pct
-                self.__crop_x0 = (uncropped_output.shape[1] - crop_width) / 2
-                self.__crop_x1 = int(round(self.__crop_x0 + crop_width))
-                self.__crop_x0 = int(round(self.__crop_x0))
             output = uncropped_output[:, self.__crop_x0:self.__crop_x1, :]
 
             face_detect_start = time.time()
             # Find all the faces and face encodings in the current frame of video
-            gray = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)
-            gray = cv2.equalizeHist(gray)
 
-            # detectMultiScale docs:
-            # * https://docs.opencv.org/4.7.0/d1/de5/classcv_1_1CascadeClassifier.html#aaf8181cb63968136476ec4204ffca498
-            # * https://stackoverflow.com/a/55628240
-            # * https://github.com/raspberrypi/picamera2/blob/main/examples/opencv_face_detect.py
-            # * https://answers.opencv.org/question/10654/how-does-the-parameter-scalefactor-in-detectmultiscale-affect-face-detection/
-            # * https://stackoverflow.com/questions/22249579/opencv-detectmultiscale-minneighbors-parameter
-            face_locations = face_detector.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=4, maxSize=(140, 140), minSize=(15, 15))
+            face_locations = face_detector.detect(output)
             now = time.time()
             if len(face_locations) > 0:
                 self.__num_consecutive_face_frames = self.__num_consecutive_face_frames + 1
@@ -190,10 +189,9 @@ class ScaredyCat:
             (w0, h0) = self.__picam2.stream_configuration("main")["size"]
             (w1, h1) = self.__picam2.stream_configuration("main")["size"]
             with picamera2.MappedArray(request, "main") as m:
-                if self.__crop_x0 is not None:
-                    # Place black bars on the sides of the image where we cropped them out
-                    cv2.rectangle(img=m.array, pt1=(0, 0), pt2=(self.__crop_x0, h0), color=(0, 0, 0, 0), thickness=-1)
-                    cv2.rectangle(img=m.array, pt1=(self.__crop_x1, 0), pt2=(w0, h0), color=(0, 0, 0, 0), thickness=-1)
+                # Place black bars on the sides of the image where we cropped them out
+                cv2.rectangle(img=m.array, pt1=(0, 0), pt2=(self.__crop_x0, h0), color=(0, 0, 0, 0), thickness=-1)
+                cv2.rectangle(img=m.array, pt1=(self.__crop_x1, 0), pt2=(w0, h0), color=(0, 0, 0, 0), thickness=-1)
 
                 for f in self.__confirmed_face_locations:
                     (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
