@@ -19,4 +19,17 @@ brew install --cask xquartz
 
 ## Known issues
 
+### sudo
 This method of viewing live camera images doesn't seem to work with `sudo`. It fails when running in XQuartz with https://gist.github.com/dasl-/35a7a9df94a35188e2307b6e6e2fa092[this error]. So don't run with `sudo`!
+
+### "Could not load Qt platform plugin"
+You may see an error like this:
+....
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "/usr/local/lib/python3.9/dist-packages/cv2/qt/plugins" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+....
+
+Follow the advice in this https://github.com/labelmeai/labelme/issues/842#issuecomment-826481652[github comment] - that is:
+....
+sudo mv /usr/local/lib/python3.9/dist-packages/cv2/qt/plugins /usr/local/lib/python3.9/dist-packages/cv2/qt/plugins.bak
+....

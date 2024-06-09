@@ -1,0 +1,5 @@
+# readme
+
+The file `face_detection_yunet_2023mar.onnx` was downloaded from: https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet
+
+This was as per the instructions here: https://docs.opencv.org/4.x/d0/dd4/tutorial_dnn_face.html
