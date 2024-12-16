@@ -30,3 +30,6 @@ link:docs/viewing_live_camera_images_over_ssh.adoc[Preview the camera footage].
 . Raspberry pi 4b
 . https://www.pishop.us/product/raspberry-pi-camera-module-3/[Raspberry Pi Camera Module 3]
 . Servo, electromagnet, and associated control circuitry
+
+## Mounting
+You will likely get better motion of the pendulum if you mount the clock on the wall very slightly off-center. Instead of aligning the clock straight up and down (12 o'clock), mount it towards 11 o'clock (head leaning to the left). This should be an almost imperceptible angle -- don't do anything drastic. Very subtle changes in alignment can have big impacts on the pendulum motion.
