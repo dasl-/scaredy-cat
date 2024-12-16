@@ -10,8 +10,8 @@ from scaredycat.logger import Logger
 SERVO_PIN = 18 # Use this pin to tell the servo to hold or release the pendulum
 MAGNET_PIN = 23 # Use this pin to tell the electromagnet to turn on or off
 
-SERVO_PAUSE_POSITION = 1050 # 1030 seems like the minimum amount
-SERVO_UNPAUSE_POSITION = 800 # 860 working, 890 is too much
+SERVO_PAUSE_POSITION = 1000
+SERVO_UNPAUSE_POSITION = 790
 
 class TickController:
 

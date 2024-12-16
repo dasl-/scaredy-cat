@@ -124,10 +124,10 @@ class ScaredyCat:
     * https://github.com/dasl-/scaredy-cat/commit/68463a40320fd733b68525f9a4db3dea92e48567
     """
     def run(self):
-
         is_paused = False
 
         cam_img_w, cam_img_h = self.__picam2.camera_configuration()['main']['size']
+        self.__logger.info(f"Using cam_img_w x cam_img_h: {cam_img_w} x {cam_img_h}")
         cropped_img_w = cam_img_w * self.__mid_col_pct
         self.__crop_x0 = (cam_img_w - cropped_img_w) / 2
         self.__crop_x1 = int(round(self.__crop_x0 + cropped_img_w))
@@ -167,7 +167,14 @@ class ScaredyCat:
                     if not is_paused:
                         self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL)
                         is_paused = True
-                        self.__logger.info("Found a confirmed face")
+                        self.__logger.info(f"Found a confirmed face: {face_locations}")
+
+                    face_dimensions = []
+                    for f in self.__confirmed_face_locations:
+                        (x, y, w, h) = [c * n // d for c, n, d in zip(f, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
+                        x = x + self.__crop_x0
+                        face_dimensions.append((int(w), int(h)))
+                    self.__logger.info(f"face width x height: {face_dimensions}")
                 else:
                     self.__unconfirmed_face_locations = face_locations
             elif len(face_locations) <= 0:
@@ -187,30 +194,27 @@ class ScaredyCat:
 
     def __setup_camera_preview(self):
         self.__picam2.start_preview(picamera2.Preview.QT)
+        (stream_img_w, stream_img_h) = self.__picam2.stream_configuration("main")["size"]
+        self.__logger.info(f"Using stream_img_w x stream_img_h: {stream_img_w} x {stream_img_h}")
 
         def draw_faces(request):
-            (w0, h0) = self.__picam2.stream_configuration("main")["size"]
-            (w1, h1) = self.__picam2.stream_configuration("main")["size"]
             with picamera2.MappedArray(request, "main") as m:
                 # Place black bars on the sides of the image where we cropped them out
-                cv2.rectangle(img=m.array, pt1=(0, 0), pt2=(self.__crop_x0, h0), color=(0, 0, 0, 0), thickness=-1)
-                cv2.rectangle(img=m.array, pt1=(self.__crop_x1, 0), pt2=(w0, h0), color=(0, 0, 0, 0), thickness=-1)
+                cv2.rectangle(img=m.array, pt1=(0, 0), pt2=(self.__crop_x0, stream_img_h), color=(0, 0, 0, 0), thickness=-1)
+                cv2.rectangle(img=m.array, pt1=(self.__crop_x1, 0), pt2=(stream_img_w, stream_img_h), color=(0, 0, 0, 0), thickness=-1)
 
                 if isinstance(self.__confirmed_face_locations, np.ndarray) and self.__confirmed_face_locations.size > 0:
                     self.__confirmed_face_locations = self.__confirmed_face_locations[:, 0:4].astype(np.int16)
                 for f in self.__confirmed_face_locations:
-                    (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
+                    (x, y, w, h) = [c * n // d for c, n, d in zip(f, (stream_img_w, stream_img_h) * 2, (stream_img_w, stream_img_h) * 2)]
                     x = x + self.__crop_x0
                     cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
-                    self.__logger.info(f"draw_faces face width x height: {w} x {h}")
 
-                self.__logger.info(f"unconf faces1: {self.__unconfirmed_face_locations}")
                 if isinstance(self.__unconfirmed_face_locations, np.ndarray) and self.__unconfirmed_face_locations.size > 0:
                     self.__unconfirmed_face_locations = self.__unconfirmed_face_locations[:, 0:4].astype(np.int16)
                 for f in self.__unconfirmed_face_locations:
-                    (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
+                    (x, y, w, h) = [c * n // d for c, n, d in zip(f, (stream_img_w, stream_img_h) * 2, (stream_img_w, stream_img_h) * 2)]
                     x = x + self.__crop_x0
                     cv2.rectangle(m.array, (x, y), (x + w, y + h), (255, 0, 0, 0))
-                    self.__logger.info(f"draw_faces face width x height: {w} x {h}")
 
         self.__picam2.post_callback = draw_faces
