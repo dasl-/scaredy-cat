@@ -81,25 +81,6 @@ class TickController:
             nextPosition = nextPosition - 10
             time.sleep(0.005)
 
-        """
-        # Pulse the magnet on and off 5 times to get the pendulum swinging
-        for i in range(5):
-            GPIO.output(MAGNET_PIN, True) # turn magnet on
-            self.__logger.info('magnet on')
-            time.sleep(0.5)
-            # timeout_s = 0.5: wait up to 0.5s for a message
-            # if self.__readAndRespondToControlMessage(timeout_s = 0.5):
-            #     self.__logger.info('magnet: got control message')
-            #     GPIO.output(MAGNET_PIN, False) # turn magnet off
-            #     break
-            GPIO.output(MAGNET_PIN, False) # turn magnet off
-            self.__logger.info('magnet off')
-            time.sleep(0.5)
-            # if self.__readAndRespondToControlMessage(timeout_s = 0.5):
-            #     self.__logger.info('magnet: got control message')
-            #     break
-        """
-
     def __pause(self):
         if (self.__paused):
             return
