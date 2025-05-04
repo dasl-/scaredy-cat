@@ -7,11 +7,11 @@ import sys
 def parseArgs():
     parser = argparse.ArgumentParser(description='Scaredy Cat',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--width', dest='width', action='store', default=448, type=int,
+    parser.add_argument('--width', dest='width', action='store', default=896, type=int,
         help='If both width and height are set, we will set the dimensions of the captured camera image to ' +
             'these dimensions. The units are pixels. Using smaller dimensions will speed up face detection.' +
             'If width and height both have a value of 0, the camera\'s default dimensions will be used.')
-    parser.add_argument('--height', dest='height', action='store', default=252, type=int,
+    parser.add_argument('--height', dest='height', action='store', default=504, type=int,
         help='If both width and height are set, we will set the dimensions of the captured camera image to ' +
             'these dimensions. The units are pixels. Using smaller dimensions will speed up face detection.' +
             'If width and height both have a value of 0, the camera\'s default dimensions will be used.')

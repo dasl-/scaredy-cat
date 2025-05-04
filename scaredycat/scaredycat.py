@@ -17,8 +17,8 @@ from scaredycat.tickcontroller import TickController
 # https://datasheets.raspberrypi.com/camera/picamera2-manual.pdf
 class ScaredyCat:
 
-    __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 3
-    __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 5
+    __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 1
+    __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 1
 
     # width, height: if both width and height are set, we will set the
     #   dimensions of the captured camera image to these dimensions. The
