@@ -163,7 +163,7 @@ class ScaredyCat:
                 face_locations = []
             now = time.time()
             if len(face_locations) > 0:
-                self.__filterFacesByDimensions(face_locations, cam_img_w, cam_img_h)
+                face_locations = self.__filterFacesByDimensions(face_locations, cam_img_w, cam_img_h)
 
             if len(face_locations) > 0:
                 self.__num_consecutive_face_frames = self.__num_consecutive_face_frames + 1
@@ -195,6 +195,7 @@ class ScaredyCat:
     def __filterFacesByDimensions(self, face_locations, cam_img_w, cam_img_h):
         face_dimensions_above_threshold = []
         face_dimensions_below_threshold = []
+        face_indices_above_threshold = []
 
         # Iterate through the list in reverse order because we may delete items from the list as we iterate
         for i in reversed(range(len(face_locations))):
@@ -203,15 +204,19 @@ class ScaredyCat:
             x = x + self.__crop_x0
             if w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT:
                 face_dimensions_below_threshold.append((int(w), int(h)))
-                del face_locations[i]
             else:
                 face_dimensions_above_threshold.append((int(w), int(h)))
+                face_indices_above_threshold.append(i)
 
         if face_dimensions_above_threshold:
             self.__logger.info(f"faces above the minimum dimensions threshold, width x height: {face_dimensions_above_threshold}")
         if face_dimensions_below_threshold:
             self.__logger.info("faces dropped because they were below the minimum dimensions threshold, width x height: " +
                 f"{face_dimensions_below_threshold}")
+
+        # https://stackoverflow.com/a/7139454/22828008
+        faces_above_threshold = face_locations[face_indices_above_threshold]
+        return faces_above_threshold
 
     def __setup_camera_preview(self):
         self.__picam2.start_preview(picamera2.Preview.QT)
