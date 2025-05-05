@@ -193,16 +193,18 @@ class ScaredyCat:
                 f"Face detect took {round(now - face_detect_start, 3)} s. Image dimensions: {output.shape}")
 
     def __filterFacesByDimensions(self, face_locations, cam_img_w, cam_img_h):
-        face_locations_above_threshold = []
         face_dimensions_above_threshold = []
         face_dimensions_below_threshold = []
-        for f in face_locations:
-            (x, y, w, h) = [c * n // d for c, n, d in zip(f, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
+
+        # Iterate through the list in reverse order because we may delete items from the list as we iterate
+        for i in reversed(range(len(face_locations))):
+            face = face_locations[i]
+            (x, y, w, h) = [c * n // d for c, n, d in zip(face, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
             x = x + self.__crop_x0
             if w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT:
                 face_dimensions_below_threshold.append((int(w), int(h)))
+                del face_locations[i]
             else:
-                face_locations_above_threshold.append(f)
                 face_dimensions_above_threshold.append((int(w), int(h)))
 
         if face_dimensions_above_threshold:
@@ -210,8 +212,6 @@ class ScaredyCat:
         if face_dimensions_below_threshold:
             self.__logger.info("faces dropped because they were below the minimum dimensions threshold, width x height: " +
                 f"{face_dimensions_below_threshold}")
-
-        return face_locations_above_threshold
 
     def __setup_camera_preview(self):
         self.__picam2.start_preview(picamera2.Preview.QT)
