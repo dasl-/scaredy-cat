@@ -202,7 +202,7 @@ class ScaredyCat:
             face = face_locations[i]
             (x, y, w, h) = [c * n // d for c, n, d in zip(face, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
             x = x + self.__crop_x0
-            if w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT and len(self.__confirmed_face_locations) <= 0:
+            if (w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT) and len(self.__confirmed_face_locations) <= 0:
                 # Don't drop a face if we have already confirmed it -- if a face is on the cusp of being below the
                 # minimum dimensions, we don't want it to flap if the dimensions vary slightly
                 face_dimensions_below_threshold.append((int(w), int(h)))
