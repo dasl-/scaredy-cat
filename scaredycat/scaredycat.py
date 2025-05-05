@@ -163,7 +163,7 @@ class ScaredyCat:
                 face_locations = []
             now = time.time()
             if len(face_locations) > 0:
-                face_locations = self.__filterFacesByDimensions(face_locations, cam_img_w, cam_img_h)
+                self.__filterFacesByDimensions(face_locations, cam_img_w, cam_img_h)
 
             if len(face_locations) > 0:
                 self.__num_consecutive_face_frames = self.__num_consecutive_face_frames + 1
