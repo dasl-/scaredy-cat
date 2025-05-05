@@ -18,7 +18,7 @@ from scaredycat.tickcontroller import TickController
 class ScaredyCat:
 
     __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 1
-    __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 1
+    __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 2
     __MIN_FACE_WIDTH = 30
     __MIN_FACE_HEIGHT = 40
     __FACE_DETECTION_MINIMUM_SCORE = 0.65 # float in range [0, 1]: how confident the face detection is in a given face
@@ -202,7 +202,9 @@ class ScaredyCat:
             face = face_locations[i]
             (x, y, w, h) = [c * n // d for c, n, d in zip(face, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
             x = x + self.__crop_x0
-            if w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT:
+            if w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT and not self.__confirmed_face_locations:
+                # Don't drop a face if we have already confirmed it -- if a face is on the cusp of being below the
+                # minimum dimensions, we don't want it to flap if the dimensions vary slightly
                 face_dimensions_below_threshold.append((int(w), int(h)))
             else:
                 face_dimensions_above_threshold.append((int(w), int(h)))
