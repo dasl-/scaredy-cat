@@ -19,6 +19,9 @@ class ScaredyCat:
 
     __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 1
     __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 1
+    __MIN_FACE_WIDTH = 30
+    __MIN_FACE_HEIGHT = 40
+    __FACE_DETECTION_MINIMUM_SCORE = 0.65 # float in range [0, 1]: how confident the face detection is in a given face
 
     # width, height: if both width and height are set, we will set the
     #   dimensions of the captured camera image to these dimensions. The
@@ -139,7 +142,8 @@ class ScaredyCat:
         # https://github.com/opencv/opencv_zoo/blob/80f7c6aa030a87b3f9e8ab7d84f62f13d308c10f/models/face_detection_yunet/yunet.py#L15
         face_detector = cv2.FaceDetectorYN.create(
             model = os.path.abspath(os.path.dirname(__file__) + '/../data/face_detection_yunet_2023mar.onnx'),
-            config="", input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h), score_threshold = 0.6
+            config="", input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h),
+            score_threshold = self.__FACE_DETECTION_MINIMUM_SCORE
         )
         while True:
             loop_start = time.time()
@@ -159,6 +163,9 @@ class ScaredyCat:
                 face_locations = []
             now = time.time()
             if len(face_locations) > 0:
+                face_locations = self.__filterFacesByDimensions(face_locations, cam_img_w, cam_img_h)
+
+            if len(face_locations) > 0:
                 self.__num_consecutive_face_frames = self.__num_consecutive_face_frames + 1
                 if self.__num_consecutive_face_frames >= self.__NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE:
                     self.__num_consecutive_empty_frames = 0
@@ -168,13 +175,6 @@ class ScaredyCat:
                         self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL)
                         is_paused = True
                         self.__logger.info(f"Found a confirmed face: {face_locations}")
-
-                    face_dimensions = []
-                    for f in self.__confirmed_face_locations:
-                        (x, y, w, h) = [c * n // d for c, n, d in zip(f, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
-                        x = x + self.__crop_x0
-                        face_dimensions.append((int(w), int(h)))
-                    self.__logger.info(f"face width x height: {face_dimensions}")
                 else:
                     self.__unconfirmed_face_locations = face_locations
             elif len(face_locations) <= 0:
@@ -186,11 +186,32 @@ class ScaredyCat:
                     if is_paused:
                         self.__unix_socket_helper.send_msg(TickController.UNPAUSE_SIGNAL)
                         is_paused = False
-                        self.__logger.info("Lost a confirmed face [found]")
+                        self.__logger.info("Lost a confirmed face")
 
             self.__logger.info(f"Found {len(face_locations)} faces in image. Loop took " +
                 f"{round(now - loop_start, 3)} s. Image capture took {img_capture_elapsed_s} s. " +
                 f"Face detect took {round(now - face_detect_start, 3)} s. Image dimensions: {output.shape}")
+
+    def __filterFacesByDimensions(self, face_locations, cam_img_w, cam_img_h):
+        face_locations_above_threshold = []
+        face_dimensions_above_threshold = []
+        face_dimensions_below_threshold = []
+        for f in face_locations:
+            (x, y, w, h) = [c * n // d for c, n, d in zip(f, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
+            x = x + self.__crop_x0
+            if w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT:
+                face_dimensions_below_threshold.append((int(w), int(h)))
+            else:
+                face_locations_above_threshold.append(f)
+                face_dimensions_above_threshold.append((int(w), int(h)))
+
+        if face_dimensions_above_threshold:
+            self.__logger.info(f"faces above the minimum dimensions threshold, width x height: {face_dimensions_above_threshold}")
+        if face_dimensions_below_threshold:
+            self.__logger.info("faces dropped because they were below the minimum dimensions threshold, width x height: " +
+                f"{face_dimensions_below_threshold}")
+
+        return face_locations_above_threshold
 
     def __setup_camera_preview(self):
         self.__picam2.start_preview(picamera2.Preview.QT)
