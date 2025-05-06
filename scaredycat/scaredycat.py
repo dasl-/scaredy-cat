@@ -21,7 +21,7 @@ class ScaredyCat:
     __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 2
     __MIN_FACE_WIDTH = 30
     __MIN_FACE_HEIGHT = 40
-    __FACE_DETECTION_MINIMUM_SCORE = 0.65 # float in range [0, 1]: how confident the face detection is in a given face
+    __FACE_DETECTION_MINIMUM_SCORE = 0.80 # float in range [0, 1]: how confident the face detection is in a given face
 
     # width, height: if both width and height are set, we will set the
     #   dimensions of the captured camera image to these dimensions. The
@@ -223,24 +223,59 @@ class ScaredyCat:
     def __setup_camera_preview(self, stream_img_w, stream_img_h):
         self.__picam2.start_preview(picamera2.Preview.QT)
 
+        thickness = 2
+
+        def draw_face(face_array, is_confirmed, img):
+            face_x = int(face_array[0] + self.__crop_x0)
+            face_y = int(face_array[1])
+            face_w = int(face_array[2])
+            face_h = int(face_array[3])
+
+            right_eye_x = int(face_array[4] + self.__crop_x0)
+            right_eye_y = int(face_array[5])
+            left_eye_x = int(face_array[6] + self.__crop_x0)
+            left_eye_y = int(face_array[7])
+
+            nose_x = int(face_array[8] + self.__crop_x0)
+            nose_y = int(face_array[9])
+
+            right_mouth_x = int(face_array[10] + self.__crop_x0)
+            right_mouth_y = int(face_array[11])
+            left_mouth_x = int(face_array[12] + self.__crop_x0)
+            left_mouth_y = int(face_array[13])
+
+            # Draw face bounding box: green if confirmed, red if unconfirmed
+            if is_confirmed:
+                face_bounding_box_color = (0, 255, 0, 0)
+            else:
+                face_bounding_box_color = (255, 0, 0, 0)
+            cv2.rectangle(img.array, (face_x, face_y), (face_x + face_w, face_y + face_h), face_bounding_box_color)
+
+            # Right eye: red
+            cv2.circle(img.array, (right_eye_x, right_eye_y), 2, (255, 0, 0), thickness)
+
+            # Left eye: blue
+            cv2.circle(img.array, (left_eye_x, left_eye_y), 2, (0, 0, 255), thickness)
+
+            # Nose: red
+            cv2.circle(img.array, (nose_x, nose_y), 2, (255, 0, 0), thickness)
+
+            # Right corner of mouth: magenta
+            cv2.circle(img.array, (right_mouth_x, right_mouth_y), 2, (255, 0, 255), thickness)
+
+            # Left corner of mouth: cyan
+            cv2.circle(img.array, (left_mouth_x, left_mouth_y), 2, (0, 255, 255), thickness)
+
         def draw_faces(request):
             with picamera2.MappedArray(request, "main") as m:
                 # Place black bars on the sides of the image where we cropped them out
                 cv2.rectangle(img=m.array, pt1=(0, 0), pt2=(self.__crop_x0, stream_img_h), color=(0, 0, 0, 0), thickness=-1)
                 cv2.rectangle(img=m.array, pt1=(self.__crop_x1, 0), pt2=(stream_img_w, stream_img_h), color=(0, 0, 0, 0), thickness=-1)
 
-                if isinstance(self.__confirmed_face_locations, np.ndarray) and self.__confirmed_face_locations.size > 0:
-                    self.__confirmed_face_locations = self.__confirmed_face_locations[:, 0:4].astype(np.int16)
                 for f in self.__confirmed_face_locations:
-                    (x, y, w, h) = [c * n // d for c, n, d in zip(f, (stream_img_w, stream_img_h) * 2, (stream_img_w, stream_img_h) * 2)]
-                    x = x + self.__crop_x0
-                    cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
+                    draw_face(f, True, m)
 
-                if isinstance(self.__unconfirmed_face_locations, np.ndarray) and self.__unconfirmed_face_locations.size > 0:
-                    self.__unconfirmed_face_locations = self.__unconfirmed_face_locations[:, 0:4].astype(np.int16)
                 for f in self.__unconfirmed_face_locations:
-                    (x, y, w, h) = [c * n // d for c, n, d in zip(f, (stream_img_w, stream_img_h) * 2, (stream_img_w, stream_img_h) * 2)]
-                    x = x + self.__crop_x0
-                    cv2.rectangle(m.array, (x, y), (x + w, y + h), (255, 0, 0, 0))
+                    draw_face(f, False, m)
 
         self.__picam2.post_callback = draw_faces
