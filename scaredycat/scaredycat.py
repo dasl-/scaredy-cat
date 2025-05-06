@@ -65,7 +65,7 @@ class ScaredyCat:
         display = None # controls which streams will be shown in the preview
         if show_preview:
             display = 'main'
-            self.__setup_camera_preview()
+            self.__setup_camera_preview(width, height)
 
         # raw: ensure we get the full field of view even when using a small viewport. See:
         # * https://github.com/raspberrypi/picamera2/discussions/567
@@ -220,10 +220,8 @@ class ScaredyCat:
         faces_above_threshold = face_locations[face_indices_above_threshold]
         return faces_above_threshold
 
-    def __setup_camera_preview(self):
+    def __setup_camera_preview(self, stream_img_w, stream_img_h):
         self.__picam2.start_preview(picamera2.Preview.QT)
-        (stream_img_w, stream_img_h) = self.__picam2.stream_configuration("main")["size"]
-        self.__logger.info(f"Using stream_img_w x stream_img_h: {stream_img_w} x {stream_img_h}")
 
         def draw_faces(request):
             with picamera2.MappedArray(request, "main") as m:
