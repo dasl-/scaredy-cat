@@ -46,6 +46,8 @@ After=network-online.target
 Wants=network-online.target
 BindsTo=pigpiod.service
 After=pigpiod.service
+BindsTo=scaredycat_main.service
+Before=scaredycat_main.service
 
 [Service]
 Environment=HOME=/root
