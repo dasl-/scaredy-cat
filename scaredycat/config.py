@@ -37,10 +37,12 @@ class Config:
         if not os.path.exists(Config.__DEFAULT_CONFIG_PATH):
             raise Exception(f"No default config file found at: {Config.__DEFAULT_CONFIG_PATH}.")
 
-        if not os.path.exists(Config.CONFIG_PATH):
-            raise Exception(f"No config file found at: {Config.CONFIG_PATH}.")
+        if os.path.exists(Config.CONFIG_PATH):
+            Config.__logger.info(f"Using config file at: {Config.CONFIG_PATH}")
+        else:
+            Config.__logger.info(f"No config file found at: {Config.CONFIG_PATH}")
 
-        Config.__logger.info(f"Found config file at: {Config.CONFIG_PATH}")
+
         with open(Config.__DEFAULT_CONFIG_PATH) as default_config_json, open(Config.CONFIG_PATH) as config_json:
             default_config = pyjson5.decode(default_config_json.read())
             config = pyjson5.decode(config_json.read())
