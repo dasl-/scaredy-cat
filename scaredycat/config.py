@@ -39,13 +39,15 @@ class Config:
 
         if os.path.exists(Config.CONFIG_PATH):
             Config.__logger.info(f"Using config file at: {Config.CONFIG_PATH}")
+            with open(Config.CONFIG_PATH) as config_json:
+                config = pyjson5.decode(config_json.read())
         else:
             Config.__logger.info(f"No config file found at: {Config.CONFIG_PATH}")
+            config = {}
 
 
-        with open(Config.__DEFAULT_CONFIG_PATH) as default_config_json, open(Config.CONFIG_PATH) as config_json:
+        with open(Config.__DEFAULT_CONFIG_PATH) as default_config_json:
             default_config = pyjson5.decode(default_config_json.read())
-            config = pyjson5.decode(config_json.read())
             Config.__merge_dicts(default_config, config)
             Config.__config = default_config
 
