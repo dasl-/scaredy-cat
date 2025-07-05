@@ -8,7 +8,7 @@ import sys
 root_dir = os.path.abspath(os.path.dirname(__file__) + '/..')
 sys.path.append(root_dir)
 from scaredycat.scaredycat import TickController
-from scaredycat.scaredycat import Config
+from scaredycat.config import Config
 
 def parseArgs():
     parser = argparse.ArgumentParser(description='Scaredy Cat',
