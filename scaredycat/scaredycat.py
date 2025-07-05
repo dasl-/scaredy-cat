@@ -119,7 +119,7 @@ class ScaredyCat:
         self.__setup_crop(mid_col_pct, horizontal_offset_pct)
 
         # See information about autofocus / focus bug that could resurface:
-        # https://github.com/dasl-/scaredy-cat/blob/32bd95ec47a2f3040e38cddd93e3ee56c6931341/util/focus_lens_test.py
+        # https://github.com/dasl-/scaredy-cat/blob/main/docs/issues_weve_seen_before.adoc#blurry-images-autofocus--focus-problems
         self.__picam2.set_controls({
             "AfMetering": libcamera.controls.AfMeteringEnum.Auto,
             "AfMode": libcamera.controls.AfModeEnum.Continuous,
