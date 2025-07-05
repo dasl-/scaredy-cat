@@ -1,35 +1,6 @@
 #!/usr/bin/env python3
 
-"""
-We've seen issues where the camera fails to autofocus. See this album with a blurry photo (autofocus not working)
-and a sharp photo (autofocus working): https://imgur.com/a/MFvspTs
-
-Regardless of whether autofocus is working or not, the text output of this script will look identical:
-
-% python3 focus_lens_test.py
-[0:40:20.064622805] [1901]  INFO Camera camera_manager.cpp:297 libcamera v0.0.5+83-bde9b04f
-[0:40:20.185775970] [1902]  INFO RPI vc4.cpp:437 Registered camera /base/soc/i2c0mux/i2c@1/imx708@1a to Unicam device /dev/media4 and ISP device /dev/media2
-[0:40:20.185863414] [1902]  INFO RPI pipeline_base.cpp:1101 Using configuration file '/usr/share/libcamera/pipeline/rpi/vc4/rpi_apps.yaml'
-[0:40:20.192994447] [1901]  INFO Camera camera.cpp:1033 configuring streams: (0) 4608x2592-BGR888 (1) 4608x2592-SBGGR10_CSI2P
-[0:40:20.193609943] [1902]  INFO RPI vc4.cpp:565 Sensor: /base/soc/i2c0mux/i2c@1/imx708@1a - Selected sensor format: 4608x2592-SBGGR10_1X10 - Selected unicam format: 4608x2592-pBAA
-Actual LensPosition = 0.0, file capture in file lens-position0.jpg
-Actual LensPosition = 1.0, file capture in file lens-position1.jpg
-...
-Actual LensPosition = 15.0, file capture in file lens-position15.jpg
-
-However, when autofocus is broken, all images taken by this script will be blurry. When autofocus is working,
-at least some images will be sharp. Here is how images look when autofocus is working: https://imgur.com/a/1FmBME5
-
-Why does autofocus sometimes stop working? It may be related to the fact that our camera is mounted on a tilt:
-* https://forums.raspberrypi.com/viewtopic.php?t=372604
-* https://forums.raspberrypi.com/viewtopic.php?t=350405
-
-The first thread has a potential workaround. I've not tried it yet. Instead, when I notice that autofocus isn't
-working, I gently push the camera lens with a small screwdriver while viewing the live camera preview.
-
-After a bit of jiggling, autofocus may come back to life. I'm not sure how long this fixes the issue for, i.e.
-how often will I have to jiggle the lens?
-"""
+# See https://github.com/dasl-/scaredy-cat/blob/main/docs/issues_weve_seen_before.adoc#blurry-images-autofocus--focus-problems
 
 import libcamera
 import time
