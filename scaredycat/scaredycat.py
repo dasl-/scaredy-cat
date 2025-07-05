@@ -18,31 +18,59 @@ from scaredycat.tickcontroller import TickController
 class ScaredyCat:
 
     __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 1
-    __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 2
-    __MIN_FACE_WIDTH = 30
-    __MIN_FACE_HEIGHT = 40
-    __FACE_DETECTION_MINIMUM_SCORE = 0.80 # float in range [0, 1]: how confident the face detection is in a given face
+    __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 5
+
+    # Set parameters for filtering which faces are allowed. INIT_* values apply to
+    # the first face detected in a sequence of images and are generally more restrictive.
+    # REPEAT_* values apply to subsequent images and are generally more permissive. The
+    # intention is to avoid flapping -- once a face is detected, it should stay detected
+    # so long as it stays in mostly the same position.
+
+    # Minimum width and height of the detected face. When changing the width / height of the
+    # captured image, it probably makes sense to adjust these proportionally -- an image
+    # at twice the resolution will have the same face twice as large, all else being equal.
+    # INIT > REPEAT
+    __INIT_MIN_W = 24
+    __INIT_MIN_H = 30
+    __REPEAT_MIN_W = 18
+    __REPEAT_MIN_H = 22
+
+    # float in range [0, 1]: how confident the face detection is in a given face
+    # INIT > REPEAT
+    __INIT_MIN_SCORE = 0.9
+    __REPEAT_MIN_SCORE = 0.4
+
+    # float in range [0, 1]: determines the range of acceptable values for
+    # the face's Gaze Percent. For example, a GAZE_RANGE of 0.50 indicates that a Gaze
+    # Percent between 0.25 - 0.75 would be allowed.
+    # INIT < REPEAT
+    __INIT_GAZE_RANGE = 0.20
+    __REPEAT_GAZE_RANGE = 0.28
 
     # width, height: if both width and height are set, we will set the
     #   dimensions of the captured camera image to these dimensions. The
     #   units are pixels. Using smaller dimensions will speed up face
-    #   detection.
+    #   detection (the camera's native resolution is 4608x2592).
     #
     # mid_col_pct: Middle column percentage. The portion of the captured image
     #   to capture for face detection. Should be a float in (0,1]
     #
+    # horizontal_offset_pct: If the camera was not perfectly aligned when mounted, we
+    #   can compensate with this parameter. Should be a float in [-1,1]. Negative
+    #   values shift the middle column left. Positive values shift it right. This
+    #   parameter is a percentage of the width. For example, if `width = 300` and
+    #   `horizontal_offset_pct = 0.1`, we will shift the middle column right 30
+    #   pixels.
+    #
     # Explanation of how width and mid_col_pct interact:
-    # The camera's native resolution is 4608x2592. If we set mid_col_pct to
-    # 1/3, then the middle third of the image will be used - we will use the
-    # middle 1536 pixels of the captured image. If you think of the image as divided
-    # into 3 columns, we will be using the middle column. At this point, we have a
-    # captured image that is 1536x2592. We will scale this image down to the width
-    # specified by the `width` parameter. That is, if `width` is 150, we will
-    # proportionally scale the captured image such that it becomes 150x253.
+    # If we set mid_col_pct to 1/3, then the middle third of the image will be used.
+    # For example, if `width = 300`, we will use the middle 100 pixels of the captured
+    # image. If you think of the image as divided into 3 columns, we will be using the
+    # middle column.
     #
     # show_preview: if True, we will send a live feed of the captured
     #   images via SSH X11 forwarding.
-    def __init__(self, width=None, height=None, mid_col_pct=1 / 3, show_preview=False):
+    def __init__(self, width=None, height=None, mid_col_pct=1 / 3, horizontal_offset_pct = 0, show_preview=False):
         self.__logger = Logger().set_namespace(self.__class__.__name__)
         self.__logger.info("Starting ScaredyCat...")
 
@@ -51,9 +79,11 @@ class ScaredyCat:
         self.__num_consecutive_empty_frames = 0
         self.__confirmed_face_locations = []
         self.__unconfirmed_face_locations = []
-        self.__mid_col_pct = mid_col_pct
         self.__crop_x0 = None
         self.__crop_x1 = None
+
+        self.__unix_socket_helper = UnixSocketHelper()
+        self.__unix_socket_helper.connect(TickController.UNIX_SOCKET_PATH)
 
         # See the camera modes here:
         # https://github.com/raspberrypi/picamera2/issues/914#issuecomment-1879949316
@@ -81,18 +111,21 @@ class ScaredyCat:
         )
         self.__picam2.align_configuration(config)
         self.__logger.info(f"Using aligned picam config: {config}")
-
         self.__picam2.configure(config)
         self.__picam2.start()
 
-        self.__picam2.set_controls({
-            "AfMode": libcamera.controls.AfModeEnum.Continuous,  # TODO: is this AF stuff working?
-            "AfRange": libcamera.controls.AfRangeEnum.Full,
-            "AfSpeed": libcamera.controls.AfSpeedEnum.Fast,
-        })
+        self.__cam_img_w, self.__cam_img_h = self.__picam2.camera_configuration()['main']['size']
+        self.__logger.info(f"Using cam_img_w x cam_img_h: {self.__cam_img_w} x {self.__cam_img_h}")
+        self.__setup_crop(mid_col_pct, horizontal_offset_pct)
 
-        self.__unix_socket_helper = UnixSocketHelper()
-        self.__unix_socket_helper.connect(TickController.UNIX_SOCKET_PATH)
+        # See information about autofocus / focus bug that could resurface:
+        # https://github.com/dasl-/scaredy-cat/blob/32bd95ec47a2f3040e38cddd93e3ee56c6931341/util/focus_lens_test.py
+        self.__picam2.set_controls({
+            "AfMetering": libcamera.controls.AfMeteringEnum.Auto,
+            "AfMode": libcamera.controls.AfModeEnum.Continuous,
+            "AfRange": libcamera.controls.AfRangeEnum.Full,
+            "AfSpeed": libcamera.controls.AfSpeedEnum.Normal,
+        })
 
         self.__logger.info("Finished starting ScaredyCat.")
 
@@ -129,21 +162,15 @@ class ScaredyCat:
     def run(self):
         is_paused = False
 
-        cam_img_w, cam_img_h = self.__picam2.camera_configuration()['main']['size']
-        self.__logger.info(f"Using cam_img_w x cam_img_h: {cam_img_w} x {cam_img_h}")
-        cropped_img_w = cam_img_w * self.__mid_col_pct
-        self.__crop_x0 = (cam_img_w - cropped_img_w) / 2
-        self.__crop_x1 = int(round(self.__crop_x0 + cropped_img_w))
-        self.__crop_x0 = int(round(self.__crop_x0))
-
         # See:
         # https://docs.opencv.org/4.x/d0/dd4/tutorial_dnn_face.html
         # https://docs.opencv.org/4.x/df/d20/classcv_1_1FaceDetectorYN.html#a42293cf2d64f8b69a707ab70d11925b3
         # https://github.com/opencv/opencv_zoo/blob/80f7c6aa030a87b3f9e8ab7d84f62f13d308c10f/models/face_detection_yunet/yunet.py#L15
         face_detector = cv2.FaceDetectorYN.create(
             model = os.path.abspath(os.path.dirname(__file__) + '/../data/face_detection_yunet_2023mar.onnx'),
-            config="", input_size = (self.__crop_x1 - self.__crop_x0, cam_img_h),
-            score_threshold = self.__FACE_DETECTION_MINIMUM_SCORE
+            config="", input_size = (self.__crop_x1 - self.__crop_x0, self.__cam_img_h),
+            score_threshold = 0,
+            top_k = 1 # keep only the best face detection candidate
         )
         while True:
             loop_start = time.time()
@@ -155,15 +182,18 @@ class ScaredyCat:
             # https://gist.github.com/dasl-/cda68e8fef981edf9727c5995129b864
             output = uncropped_output[:, self.__crop_x0:self.__crop_x1, :]
 
-            face_detect_start = time.time()
             # Find all the faces and face encodings in the current frame of video
-
+            face_detect_start = time.time()
             ignore, face_locations = face_detector.detect(output)
             if face_locations is None:
                 face_locations = []
-            now = time.time()
+            face_detect_elapsed_s = round(time.time() - face_detect_start, 3)
             if len(face_locations) > 0:
-                face_locations = self.__filterFacesByDimensions(face_locations, cam_img_w, cam_img_h)
+                face_locations = self.__filterFacesByScore(face_locations)
+            if len(face_locations) > 0:
+                face_locations = self.__filterFacesByDimensions(face_locations)
+            if len(face_locations) > 0:
+                face_locations = self.__filterFacesByGaze(face_locations)
 
             if len(face_locations) > 0:
                 self.__num_consecutive_face_frames = self.__num_consecutive_face_frames + 1
@@ -189,39 +219,130 @@ class ScaredyCat:
                         self.__logger.info("Lost a confirmed face")
 
             self.__logger.info(f"Found {len(face_locations)} faces in image. Loop took " +
-                f"{round(now - loop_start, 3)} s. Image capture took {img_capture_elapsed_s} s. " +
-                f"Face detect took {round(now - face_detect_start, 3)} s. Image dimensions: {output.shape}")
+                f"{round(time.time() - loop_start, 3)} s. Image capture took {img_capture_elapsed_s} s. " +
+                f"Face detect took {face_detect_elapsed_s} s. Image dimensions: {output.shape}")
 
-    def __filterFacesByDimensions(self, face_locations, cam_img_w, cam_img_h):
+    # Only keep faces with sufficiently high face detection score. Low scores might be false positives.
+    def __filterFacesByScore(self, face_locations):
+        if len(self.__confirmed_face_locations) <= 0: # initial detection
+            min_score = self.__INIT_MIN_SCORE
+            threshold_text = f"initial threshold of {self.__INIT_MIN_SCORE}"
+        else: # repeat detection
+            min_score = self.__REPEAT_MIN_SCORE
+            threshold_text = f"repeat threshold of {self.__REPEAT_MIN_SCORE}"
+
+        face_indices_above_threshold = []
+        face_indices_below_threshold = []
+        for i in range(len(face_locations)):
+            score = face_locations[i][14]
+            if score >= min_score:
+                face_indices_above_threshold.append(i)
+            else:
+                face_indices_below_threshold.append(i)
+
+        if face_indices_above_threshold:
+            scores = []
+            for i in face_indices_above_threshold:
+                scores.append(face_locations[i][14])
+            self.__logger.debug(f"faces scores above the {threshold_text}: {scores}")
+
+        if face_indices_below_threshold:
+            scores = []
+            for i in face_indices_below_threshold:
+                scores.append(face_locations[i][14])
+            self.__logger.debug(f"faces scores below the {threshold_text}: {scores}")
+
+        # return faces_locations above the threshold: https://stackoverflow.com/a/7139454/22828008
+        return face_locations[face_indices_above_threshold]
+
+    # Only keep faces that are sufficiently large. Small faces might be false positives.
+    def __filterFacesByDimensions(self, face_locations):
+        if len(self.__confirmed_face_locations) <= 0: # initial detection
+            min_w = self.__INIT_MIN_W
+            min_h = self.__INIT_MIN_H
+            threshold_text = f"initial threshold of {min_w}x{min_h}"
+        else: # repeat detection
+            min_w = self.__REPEAT_MIN_W
+            min_h = self.__REPEAT_MIN_H
+            threshold_text = f"repeat threshold of {min_w}x{min_h}"
+
         face_dimensions_above_threshold = []
         face_dimensions_below_threshold = []
         face_indices_above_threshold = []
-
-        # Iterate through the list in reverse order because we may delete items from the list as we iterate
-        for i in reversed(range(len(face_locations))):
-            face = face_locations[i]
-            (x, y, w, h) = [c * n // d for c, n, d in zip(face, (cam_img_w, cam_img_h) * 2, (cam_img_w, cam_img_h) * 2)]
+        for i in range(len(face_locations)):
+            (x, y, w, h) = face_locations[i][:4]
             x = x + self.__crop_x0
-            if (w < self.__MIN_FACE_WIDTH or h < self.__MIN_FACE_HEIGHT) and len(self.__confirmed_face_locations) <= 0:
-                # Don't drop a face if we have already confirmed it -- if a face is on the cusp of being below the
-                # minimum dimensions, we don't want it to flap if the dimensions vary slightly
-                face_dimensions_below_threshold.append((int(w), int(h)))
-            else:
+            if w >= min_w and h >= min_h:
                 face_dimensions_above_threshold.append((int(w), int(h)))
                 face_indices_above_threshold.append(i)
+            else:
+                face_dimensions_below_threshold.append((int(w), int(h)))
 
         if face_dimensions_above_threshold:
-            self.__logger.info(f"faces above the minimum dimensions threshold, width x height: {face_dimensions_above_threshold}")
+            self.__logger.debug(f"face dimensions above the {threshold_text}: {face_dimensions_above_threshold}")
         if face_dimensions_below_threshold:
-            self.__logger.info("faces dropped because they were below the minimum dimensions threshold, width x height: " +
-                f"{face_dimensions_below_threshold}")
+            self.__logger.debug(f"face dimensions below the {threshold_text}: {face_dimensions_below_threshold}")
 
-        # https://stackoverflow.com/a/7139454/22828008
-        faces_above_threshold = face_locations[face_indices_above_threshold]
-        return faces_above_threshold
+        # return faces_locations above the threshold: https://stackoverflow.com/a/7139454/22828008
+        return face_locations[face_indices_above_threshold]
+
+    # Only keep faces that are looking straight at the camera in terms of horizontal viewing angle (with some tolerance).
+    # A face's "Gaze Percent" is in the range [0, 1]. A face with a "Gaze Percent" of 0.5 is looking directly at the
+    # camera. A Gaze Percent < 0.5 means the face is looking to the left. And > 0.5 means the face is looking to the
+    # right.
+    def __filterFacesByGaze(self, face_locations):
+        if len(self.__confirmed_face_locations) <= 0: # initial detection
+            mid_col_pct = 0.20
+            range_text = f"initial range of"
+        else: # repeat detection
+            mid_col_pct = 0.28
+            range_text = f"repeat range of"
+
+        min_gaze_pct = (1 - mid_col_pct) / 2
+        max_gaze_pct = round(min_gaze_pct + mid_col_pct, 2)
+        min_gaze_pct = round(min_gaze_pct, 2)
+
+        gaze_pcts_within_bounds = []
+        gaze_pcts_out_of_bounds = []
+        face_indices_within_bounds = []
+        for i in range(len(face_locations)):
+            face = face_locations[i]
+            face_x = face[0]
+            face_w = face[2]
+
+            right_eye_x = face[4] - face_x
+            left_eye_x = face[6] - face_x
+            nose_x = face[8] - face_x
+            right_mouth_x = face[10] - face_x
+            left_mouth_x = face[12] - face_x
+
+            # This should be a float in [0, 1]
+            gaze_pct = round(1 - ((right_eye_x + left_eye_x + nose_x + right_mouth_x + left_mouth_x) / 5 / face_w), 2)
+
+            if min_gaze_pct <= gaze_pct and gaze_pct <= max_gaze_pct:
+                gaze_pcts_within_bounds.append(gaze_pct)
+                face_indices_within_bounds.append(i)
+            else:
+                gaze_pcts_out_of_bounds.append(gaze_pct)
+
+        if gaze_pcts_within_bounds:
+            self.__logger.debug(f"face gaze % within {range_text} [{min_gaze_pct} - {max_gaze_pct}]: {gaze_pcts_within_bounds}")
+        if gaze_pcts_out_of_bounds:
+            self.__logger.debug(f"face gaze % outside of {range_text} [{min_gaze_pct} - {max_gaze_pct}]: {gaze_pcts_out_of_bounds}")
+
+        # return faces_locations above the threshold: https://stackoverflow.com/a/7139454/22828008
+        return face_locations[face_indices_within_bounds]
+
+    def __setup_crop(self, mid_col_pct, horizontal_offset_pct):
+        cropped_img_w = self.__cam_img_w * mid_col_pct
+        horizontal_offset = -horizontal_offset_pct * self.__cam_img_w
+        self.__crop_x0 = (self.__cam_img_w - cropped_img_w) / 2
+        self.__crop_x1 = int(round(self.__crop_x0 + cropped_img_w + horizontal_offset))
+        self.__crop_x0 = int(round(self.__crop_x0 + horizontal_offset))
+        self.__logger.info(f"horizontal_offset: {horizontal_offset}, crop_x0: {self.__crop_x0}, crop_x1: {self.__crop_x1}")
 
     def __setup_camera_preview(self, stream_img_w, stream_img_h):
-        self.__picam2.start_preview(picamera2.Preview.QT)
+        self.__picam2.start_preview(picamera2.Preview.QT, transform=libcamera.Transform(hflip=1))
 
         thickness = 2
 
