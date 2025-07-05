@@ -3,7 +3,7 @@
 :toclevels: 5
 
 ## Blurry images: autofocus / focus problems
-We've seen issues where the camera fails to autofocus. See this album with a blurry photo (autofocus not working) and a sharp photo (autofocus working): https://imgur.com/a/MFvspTs
+We've seen issues where the camera fails to autofocus. See https://imgur.com/a/MFvspTs[this album] with a blurry photo (autofocus not working) and a sharp photo (autofocus working).
 
 Regardless of whether autofocus is working or not, the text output of this script will look identical:
 
@@ -20,11 +20,12 @@ Actual LensPosition = 1.0, file capture in file lens-position1.jpg
 Actual LensPosition = 15.0, file capture in file lens-position15.jpg
 ....
 
-However, when autofocus is broken, all images taken by this script will be blurry. When autofocus is working, at least some images will be sharp. Here is how images look when autofocus is working: https://imgur.com/a/1FmBME5
+However, when autofocus is broken, all images taken by this script will be blurry. When autofocus is working, at least some images will be sharp. https://imgur.com/a/1FmBME5[Here is how images look] when autofocus is working.
 
 Why does autofocus sometimes stop working? It may be related to the fact that our camera is mounted on a tilt:
-1. https://forums.raspberrypi.com/viewtopic.php?t=372604
-2. https://forums.raspberrypi.com/viewtopic.php?t=350405
+
+. https://forums.raspberrypi.com/viewtopic.php?t=372604
+. https://forums.raspberrypi.com/viewtopic.php?t=350405
 
 The first thread has a potential workaround. I've not tried it yet. Instead, when I notice that autofocus isn't working, I gently push the camera lens with a small screwdriver while viewing the live camera preview.
 
