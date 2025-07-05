@@ -35,7 +35,7 @@ updateAndInstallPackages(){
     sudo apt -y install ${apt_packages[*]}
     sudo apt -y full-upgrade
 
-    sudo PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pytz
+    sudo PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pytz pyjson5
 }
 
 fail(){

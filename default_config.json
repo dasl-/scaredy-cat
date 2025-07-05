@@ -1,0 +1,8 @@
+// Do not modify this file. If you want to customize the configuration, create a file `config.json` and
+// specify only the settings you want to override.
+{
+    // Optional, string, default: "info".
+    // Valid values: "quiet", "error", "warning", "info", "debug", "all" (from quietest to most verbose).
+    "log_level": "info",
+
+}
