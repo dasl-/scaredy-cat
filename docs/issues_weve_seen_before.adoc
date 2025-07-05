@@ -3,7 +3,7 @@
 :toclevels: 5
 
 ## Blurry images: autofocus / focus problems
-We've seen issues where the camera fails to autofocus. See https://imgur.com/a/MFvspTs[this album] with a blurry photo (autofocus not working) and a sharp photo (autofocus working).
+We've seen issues where the camera fails to autofocus. This is bad because the face detection is much more accurate when the image is in focus. See https://imgur.com/a/MFvspTs[this album] with a blurry photo (autofocus not working) and a sharp photo (autofocus working).
 
 We have a script https://github.com/dasl-/scaredy-cat/blob/9fc816fa310f89b0c65ed5e2567973e254c967a3/util/focus_lens_test.py[`focus_lens_test.py`] that can help determine whether this bug is occuring. Regardless of whether autofocus is working or not, the text output of the script will look identical:
 
