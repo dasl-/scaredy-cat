@@ -13,9 +13,9 @@ brew install --cask xquartz
 
 ## Viewing live feed
 1. Open XQuartz
-1. In an XQuartz terminal: `ssh -v -XY <user>@<pi hostname or IP>`
+1. In an XQuartz terminal: `ssh -XY <user>@<pi hostname or IP>`
 1. Stop the service, if it's running, so that we don't have two copies of the program running: `sudo systemctl stop scaredycat_main.service`
-1. Run the program with the preview flag: `./bin/scaredycat --show-preview`
+1. Run the program with the preview flag: `sudo ./bin/tick_controller & ; ./bin/scaredycat  --show-preview`
 
 ## Known issues
 
