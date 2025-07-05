@@ -16,6 +16,7 @@ There are 2 services: scaredycat_tick_controller.service and scaredycat_main.ser
 ....
 sudo systemctl restart scaredycat_main.service scaredycat_tick_controller.service
 ....
+Restarting one will automatically restart the other.
 
 Logs can be viewed via:
 ....
@@ -23,6 +24,9 @@ journalctl | grep SCAREDYCAT
 ....
 
 link:docs/viewing_live_camera_images_over_ssh.adoc[Preview the camera footage].
+
+## Issues we've seen before
+link:docs/issues_weve_seen_before.adoc[Issues we've seen before].
 
 ## Materials
 . https://www.amazon.com/gp/product/B0019IBD3U/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1[Kit Cat Klock Gentlemen The Original (Classic Black)] (These come in two sizes - small and large. Make sure you get the large [original] one)
