@@ -218,7 +218,7 @@ class ScaredyCat:
                         is_paused = False
                         self.__logger.info("Lost a confirmed face")
 
-            self.__logger.info(f"Found {len(face_locations)} faces in image. Loop took " +
+            self.__logger.debug(f"Found {len(face_locations)} faces in image. Loop took " +
                 f"{round(time.time() - loop_start, 3)} s. Image capture took {img_capture_elapsed_s} s. " +
                 f"Face detect took {face_detect_elapsed_s} s. Image dimensions: {output.shape}")
 

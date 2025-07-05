@@ -38,11 +38,11 @@ class TickController:
             self.__readAndRespondToControlMessage(timeout_s = 0.5)
             if not self.__paused:
                 GPIO.output(MAGNET_PIN, True) # turn magnet on
-                self.__logger.info('magnet on')
+                self.__logger.debug('magnet on')
             self.__readAndRespondToControlMessage(timeout_s = 0.5)
             if not self.__paused:
                 GPIO.output(MAGNET_PIN, False) # turn magnet off
-                self.__logger.info('magnet off')
+                self.__logger.debug('magnet off')
 
     # Returns boolean: true if we read a message within the timeout, false otherwise
     def __readAndRespondToControlMessage(self, timeout_s):
