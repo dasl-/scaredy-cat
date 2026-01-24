@@ -12,11 +12,11 @@ https://photos.app.goo.gl/FYvWjFjmNzPmTfJi7[Photos & Videos]
 . `./install/install.sh`
 
 ## Administration
-There are 2 services: scaredycat_tick_controller.service and scaredycat_main.service. Services can be restarted via:
+There are 3 services: scaredycat_tick_controller.service, scaredycat_main.service, and scaredycat_server.service. Services can be restarted via:
 ....
-sudo systemctl restart scaredycat_main.service scaredycat_tick_controller.service
+sudo systemctl restart scaredycat_main.service scaredycat_tick_controller.service scaredycat_server.service
 ....
-Restarting one will automatically restart the other.
+Restarting scaredycat_main or scaredycat_tick_controller will automatically restart the other.
 
 Logs can be viewed via:
 ....
@@ -24,6 +24,9 @@ journalctl | grep SCAREDYCAT
 ....
 
 link:docs/viewing_live_camera_images_over_ssh.adoc[Preview the camera footage].
+
+### Pausing Face Detection
+Face detection can be paused via the web interface. Access the web page by navigating to the Raspberry Pi's IP address in a browser (port 80). The pause state persists across reboots. Status updates may take up to 5 seconds to be reflected.
 
 ## Issues we've seen before
 link:docs/issues_weve_seen_before.adoc[Issues we've seen before].
