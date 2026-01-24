@@ -6,3 +6,4 @@
 sftp-config.json*
 __pycache__/
 pause_face_detection
+CLAUDE.local.md

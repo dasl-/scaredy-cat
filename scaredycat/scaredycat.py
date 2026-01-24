@@ -22,7 +22,7 @@ class ScaredyCat:
     PAUSE_FILE_PATH = DirectoryUtils().root_dir + "/pause_face_detection"
 
     # How often to check for pause file (in seconds). Throttled to reduce filesystem I/O on SD card.
-    __PAUSE_CHECK_INTERVAL_S = 3
+    __PAUSE_FILE_CHECK_INTERVAL_S = 3
 
     __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 1
     __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 5
@@ -169,7 +169,7 @@ class ScaredyCat:
     def run(self):
         is_ticking_paused = False
         is_face_detection_paused = False
-        last_pause_check_time = 0
+        last_pause_file_check_time = 0
 
         # See:
         # https://docs.opencv.org/4.x/d0/dd4/tutorial_dnn_face.html
@@ -184,14 +184,11 @@ class ScaredyCat:
         while True:
             loop_start = time.time()
 
-            # Check if face detection is paused via pause file
-            is_face_detection_paused, last_pause_check_time = self.__check_pause_file(
-                is_face_detection_paused, last_pause_check_time
+            is_face_detection_paused, last_pause_file_check_time = self.__check_pause_file(
+                is_face_detection_paused, last_pause_file_check_time
             )
-
-            # If paused, skip face detection processing
             if is_face_detection_paused:
-                time.sleep(self.__PAUSE_CHECK_INTERVAL_S)
+                time.sleep(self.__PAUSE_FILE_CHECK_INTERVAL_S)
                 continue
 
             # Grab a single frame of video from the RPi camera as a numpy array
@@ -428,7 +425,7 @@ class ScaredyCat:
 
         Returns: (is_paused, last_check_time) tuple with updated values
         """
-        if time.time() - last_check_time >= self.__PAUSE_CHECK_INTERVAL_S:
+        if time.time() - last_check_time >= self.__PAUSE_FILE_CHECK_INTERVAL_S:
             pause_file_exists = os.path.exists(self.PAUSE_FILE_PATH)
             new_check_time = time.time()
             if pause_file_exists != is_paused:
