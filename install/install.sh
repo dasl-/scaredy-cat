@@ -39,6 +39,24 @@ parseOpts(){
 setupSystemdServices(){
     info "Setting up systemd services..."
 
+cat <<-EOF | sudo tee /etc/systemd/system/scaredycat_server.service >/dev/null
+[Unit]
+Description=scaredycat_server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=HOME=/root
+ExecStart=$BASE_DIR/bin/server
+Restart=on-failure
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=SCAREDYCAT_SERVER
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 cat <<-EOF | sudo tee /etc/systemd/system/scaredycat_tick_controller.service >/dev/null
 [Unit]
 Description=scaredycat_tick_controller
