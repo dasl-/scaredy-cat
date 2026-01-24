@@ -54,10 +54,25 @@ class ScaredyCatServerRequestHandler(BaseHTTPRequestHandler):
             return
 
     def __serve_static_asset(self):
+        # Construct requested path
         if self.path == '/':
-            self.path = self.__root_dir + '/index.html'
+            requested_path = os.path.join(self.__root_dir, 'index.html')
         else:
-            self.path = self.__root_dir + self.path
+            # Remove leading slash to prevent absolute path
+            relative_path = self.path.lstrip('/')
+            requested_path = os.path.join(self.__root_dir, relative_path)
+
+        # Resolve to absolute path and normalize (resolve .. and symlinks)
+        resolved_path = os.path.realpath(requested_path)
+        root_dir_real = os.path.realpath(self.__root_dir)
+
+        # Security check: ensure resolved path is within allowed directory
+        if not resolved_path.startswith(root_dir_real + os.sep) and resolved_path != root_dir_real:
+            self.__logger.error(f"Path traversal attempt blocked: {self.path}")
+            self.__do_404()
+            return
+
+        self.path = resolved_path
 
         try:
             file_to_open = open(self.path, 'rb').read()
