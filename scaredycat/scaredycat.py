@@ -9,6 +9,7 @@ import numpy as np
 from scaredycat.logger import Logger
 from scaredycat.unixsockethelper import UnixSocketHelper
 from scaredycat.tickcontroller import TickController
+from scaredycat.directoryutils import DirectoryUtils
 
 # See specs for raspberry pi camera module 3:
 # https://www.raspberrypi.com/documentation/accessories/camera.html#hardware-specification
@@ -16,6 +17,12 @@ from scaredycat.tickcontroller import TickController
 # See picamera2 library docs:
 # https://datasheets.raspberrypi.com/camera/picamera2-manual.pdf
 class ScaredyCat:
+
+    # Pause file persists across reboots
+    PAUSE_FILE_PATH = DirectoryUtils().root_dir + "/pause_face_detection"
+
+    # How often to check for pause file (in seconds). Throttled to reduce filesystem I/O on SD card.
+    __PAUSE_CHECK_INTERVAL_S = 3
 
     __NUM_CONSECUTIVE_FACE_FRAMES_TO_CONFIRM_FACE = 1
     __NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY = 5
@@ -160,7 +167,9 @@ class ScaredyCat:
     * https://github.com/dasl-/scaredy-cat/commit/68463a40320fd733b68525f9a4db3dea92e48567
     """
     def run(self):
-        is_paused = False
+        is_ticking_paused = False
+        is_face_detection_paused = False
+        last_pause_check_time = 0
 
         # See:
         # https://docs.opencv.org/4.x/d0/dd4/tutorial_dnn_face.html
@@ -174,6 +183,17 @@ class ScaredyCat:
         )
         while True:
             loop_start = time.time()
+
+            # Check if face detection is paused via pause file
+            is_face_detection_paused, last_pause_check_time = self.__check_pause_file(
+                is_face_detection_paused, last_pause_check_time
+            )
+
+            # If paused, skip face detection processing
+            if is_face_detection_paused:
+                time.sleep(self.__PAUSE_CHECK_INTERVAL_S)
+                continue
+
             # Grab a single frame of video from the RPi camera as a numpy array
             uncropped_output = self.__picam2.capture_array()
             img_capture_elapsed_s = round(time.time() - loop_start, 3)
@@ -201,9 +221,9 @@ class ScaredyCat:
                     self.__num_consecutive_empty_frames = 0
                     self.__confirmed_face_locations = face_locations
                     self.__unconfirmed_face_locations = []
-                    if not is_paused:
+                    if not is_ticking_paused:
                         self.__unix_socket_helper.send_msg(TickController.PAUSE_SIGNAL)
-                        is_paused = True
+                        is_ticking_paused = True
                         self.__logger.info(f"Found a confirmed face: {face_locations}")
                 else:
                     self.__unconfirmed_face_locations = face_locations
@@ -213,9 +233,9 @@ class ScaredyCat:
                 if self.__num_consecutive_empty_frames >= self.__NUM_CONSECUTIVE_EMPTY_FRAMES_TO_CONFIRM_EMPTY:
                     self.__num_consecutive_face_frames = 0
                     self.__confirmed_face_locations = []
-                    if is_paused:
+                    if is_ticking_paused:
                         self.__unix_socket_helper.send_msg(TickController.UNPAUSE_SIGNAL)
-                        is_paused = False
+                        is_ticking_paused = False
                         self.__logger.info("Lost a confirmed face")
 
             self.__logger.debug(f"Found {len(face_locations)} faces in image. Loop took " +
@@ -400,3 +420,23 @@ class ScaredyCat:
                     draw_face(f, False, m)
 
         self.__picam2.post_callback = draw_faces
+
+    def __check_pause_file(self, is_paused, last_check_time):
+        """
+        Check if face detection should be paused based on presence of pause file.
+        Throttles checks to reduce filesystem I/O.
+
+        Returns: (is_paused, last_check_time) tuple with updated values
+        """
+        if time.time() - last_check_time >= self.__PAUSE_CHECK_INTERVAL_S:
+            pause_file_exists = os.path.exists(self.PAUSE_FILE_PATH)
+            new_check_time = time.time()
+            if pause_file_exists != is_paused:
+                if pause_file_exists:
+                    self.__logger.info("Pause file detected - pausing face detection")
+                    return True, new_check_time
+                else:
+                    self.__logger.info("Pause file removed - resuming face detection")
+                    return False, new_check_time
+            return is_paused, new_check_time
+        return is_paused, last_check_time

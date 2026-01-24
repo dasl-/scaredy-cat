@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scaredy Cat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Favicons generated with https://realfavicongenerator.net/ -->
+    <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Scaredy Cat" />
+    <link rel="manifest" href="/favicon/site.webmanifest" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0 0 20px 0;
+            color: #333;
+        }
+        .status {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            color: white;
+        }
+        .status.paused {
+            background: #ff6b6b;
+        }
+        .status.running {
+            background: #51cf66;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: #228be6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #1c7ed6;
+        }
+        button:active {
+            background: #1864ab;
+        }
+        button:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f5ff;
+            border-left: 4px solid #228be6;
+            color: #1864ab;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Scaredy Cat</h1>
+        <div class="status" id="status">Loading...</div>
+        <button id="toggleButton" onclick="togglePause()" disabled>Loading...</button>
+        <div class="info">
+            When paused, Scaredy Cat will not respond to face detection. Status updates may take up to 5 seconds to be reflected.
+        </div>
+    </div>
+    <script>
+        function updateUI(paused) {
+            const statusEl = document.getElementById('status');
+            const buttonEl = document.getElementById('toggleButton');
+
+            if (paused) {
+                statusEl.textContent = 'PAUSED';
+                statusEl.className = 'status paused';
+                buttonEl.textContent = 'Resume Face Detection';
+            } else {
+                statusEl.textContent = 'RUNNING';
+                statusEl.className = 'status running';
+                buttonEl.textContent = 'Pause Face Detection';
+            }
+            buttonEl.disabled = false;
+        }
+
+        function loadStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    updateUI(data.paused);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('status').textContent = 'Error loading status';
+                });
+        }
+
+        function togglePause() {
+            const buttonEl = document.getElementById('toggleButton');
+            buttonEl.disabled = true;
+            buttonEl.textContent = 'Please wait...';
+
+            fetch('/toggle', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    updateUI(data.paused);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to toggle pause state');
+                    loadStatus();
+                });
+        }
+
+        // Load status on page load
+        loadStatus();
+
+        // Poll status every 3 seconds
+        setInterval(loadStatus, 3000);
+    </script>
+</body>
+</html>

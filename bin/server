@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import sys
+
+# This is necessary for the imports below to work.
+root_dir = os.path.abspath(os.path.dirname(__file__) + '/..')
+sys.path.append(root_dir)
+from scaredycat.server import Server
+from scaredycat.config import Config
+
+def parseArgs():
+    parser = argparse.ArgumentParser(description='Scaredy Cat Server',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    args = parser.parse_args()
+    return args
+
+
+args = parseArgs()
+
+Config.load_config_if_not_loaded()
+Server().serve_forever()

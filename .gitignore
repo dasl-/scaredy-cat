@@ -5,3 +5,4 @@
 .DS_Store
 sftp-config.json*
 __pycache__/
+pause_face_detection
